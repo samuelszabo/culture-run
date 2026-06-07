@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { GameState } from '../game/types'
 import {
+  UNIT,
   ROAD_WORLD_WIDTH,
   CAMERA_HEIGHT,
   CAMERA_BACK,
@@ -15,6 +16,19 @@ export interface Stage {
   camera: THREE.PerspectiveCamera
   renderer: THREE.WebGLRenderer
 }
+
+export interface Landmark {
+  id: 'watchtower' | 'pagoda' | 'lion'
+  trackY: number
+  nameKey: string
+  factKey: string
+}
+
+export const LANDMARKS: Landmark[] = [
+  { id: 'watchtower', trackY: 4000, nameKey: 'landmark.watchtower', factKey: 'landmark.watchtower.fact' },
+  { id: 'pagoda',     trackY: 10000, nameKey: 'landmark.pagoda',     factKey: 'landmark.pagoda.fact' },
+  { id: 'lion',       trackY: 15500, nameKey: 'landmark.lion',       factKey: 'landmark.lion.fact' },
+]
 
 const TRACK_Z_START = 10
 const TRACK_Z_END = -410
@@ -134,11 +148,11 @@ function buildTerrain(scene: THREE.Scene): void {
   scene.add(mesh)
 
   const hillDefs = [
-    { x: -10, z: -60, rx: 8, ry: 3.5, rz: 12 },
-    { x: 11, z: -140, rx: 10, ry: 4, rz: 14 },
-    { x: -13, z: -220, rx: 9, ry: 3, rz: 11 },
-    { x: 10, z: -300, rx: 11, ry: 4.5, rz: 13 },
-    { x: -9, z: -370, rx: 8, ry: 3.2, rz: 10 },
+    { x: -17, z: -60,  rx: 7, ry: 3.5, rz: 12 },
+    { x:  19, z: -140, rx: 8, ry: 4,   rz: 14 },
+    { x: -18, z: -220, rx: 7, ry: 3,   rz: 11 },
+    { x:  18, z: -300, rx: 7, ry: 4.5, rz: 13 },
+    { x: -17, z: -370, rx: 7, ry: 3.2, rz: 10 },
   ]
   const hillMat = new THREE.MeshLambertMaterial({ color: 0x3d7a30, flatShading: true })
   for (const h of hillDefs) {
@@ -270,9 +284,120 @@ function buildWatchtower(scene: THREE.Scene, x: number, z: number): void {
 }
 
 function buildWatchtowers(scene: THREE.Scene): void {
-  buildWatchtower(scene, -10, -100)
-  buildWatchtower(scene, 10, -230)
-  buildWatchtower(scene, -10, -340)
+  buildWatchtower(scene, -10, -120)
+  buildWatchtower(scene, 10, -250)
+  buildWatchtower(scene, -10, -355)
+}
+
+function buildLandmarkWatchtower(scene: THREE.Scene, x: number, z: number): void {
+  const stoneMat = new THREE.MeshLambertMaterial({ color: TOWER_STONE })
+  const darkMat = new THREE.MeshLambertMaterial({ color: TOWER_DARK })
+
+  const base = new THREE.Mesh(new THREE.BoxGeometry(4.2, 5.0, 4.2), stoneMat)
+  base.position.set(x, 2.5, z)
+  scene.add(base)
+
+  const overhang = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.4, 5.2), darkMat)
+  overhang.position.set(x, 5.2, z)
+  scene.add(overhang)
+
+  const top = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.2, 4.4), stoneMat)
+  top.position.set(x, 5.8, z)
+  scene.add(top)
+
+  const merlonOffsets = [
+    { dx: -1.6, dz: -1.6 }, { dx: 0, dz: -1.6 }, { dx: 1.6, dz: -1.6 },
+    { dx: -1.6, dz: 0 },                           { dx: 1.6, dz: 0 },
+    { dx: -1.6, dz: 1.6 }, { dx: 0, dz: 1.6 },  { dx: 1.6, dz: 1.6 },
+  ]
+  const merlonGeo = new THREE.BoxGeometry(0.7, 0.7, 0.7)
+  for (const o of merlonOffsets) {
+    const m = new THREE.Mesh(merlonGeo, stoneMat)
+    m.position.set(x + o.dx, 6.75, z + o.dz)
+    scene.add(m)
+  }
+
+  const archGeo = new THREE.BoxGeometry(1.1, 1.8, 0.5)
+  const arch = new THREE.Mesh(archGeo, darkMat)
+  arch.position.set(x, 1.4, z + 2.1)
+  scene.add(arch)
+}
+
+function buildLandmarkPagoda(scene: THREE.Scene, x: number, z: number): void {
+  const redMat = new THREE.MeshLambertMaterial({ color: 0xcc2222 })
+  const goldMat = new THREE.MeshLambertMaterial({ color: 0xeebb00, flatShading: true })
+  const goldMat2 = new THREE.MeshLambertMaterial({ color: 0xeebb00 })
+
+  const group = new THREE.Group()
+  group.position.set(x, 0, z)
+  group.scale.setScalar(1.15)
+  scene.add(group)
+
+  const levels = 5
+  for (let i = 0; i < levels; i++) {
+    const w = 2.8 - i * 0.38
+    const yBase = i * 1.15
+
+    const body = new THREE.Mesh(new THREE.BoxGeometry(w, 0.8, w), redMat)
+    body.position.set(0, yBase + 0.4, 0)
+    group.add(body)
+
+    const eaveW = w + 0.7
+    const eave = new THREE.Mesh(new THREE.BoxGeometry(eaveW, 0.12, eaveW), goldMat)
+    eave.position.set(0, yBase + 0.86, 0)
+    group.add(eave)
+
+    const roofGeo = new THREE.ConeGeometry((w + 0.4) / 2, 0.55, 4)
+    const roof = new THREE.Mesh(roofGeo, goldMat)
+    roof.rotation.y = Math.PI / 4
+    roof.position.set(0, yBase + 0.86 + 0.06 + 0.275, 0)
+    group.add(roof)
+  }
+
+  const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.8, 4), goldMat2)
+  spire.position.set(0, levels * 1.15 + 0.4, 0)
+  group.add(spire)
+}
+
+function buildLandmarkLion(scene: THREE.Scene, x: number, z: number): void {
+  const stoneMat = new THREE.MeshLambertMaterial({ color: 0xb0a888, flatShading: true })
+  const darkStoneMat = new THREE.MeshLambertMaterial({ color: 0x888070, flatShading: true })
+
+  for (const side of [-1, 1] as const) {
+    const lx = x + side * 1.8
+
+    const pedestal = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.55, 1.1), darkStoneMat)
+    pedestal.position.set(lx, 0.275, z)
+    scene.add(pedestal)
+
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.75, 1.3), stoneMat)
+    body.position.set(lx, 0.93, z)
+    scene.add(body)
+
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.65, 0.65), stoneMat)
+    head.position.set(lx, 1.65, z + 0.2)
+    scene.add(head)
+
+    const maneGeo = new THREE.BoxGeometry(0.95, 0.75, 0.3)
+    const mane = new THREE.Mesh(maneGeo, darkStoneMat)
+    mane.position.set(lx, 1.6, z + 0.55)
+    scene.add(mane)
+
+    if (side === 1) {
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(0.2, 5, 4), stoneMat)
+      ball.position.set(lx - 0.3, 0.6, z + 0.5)
+      scene.add(ball)
+    }
+  }
+}
+
+function buildLandmarks(scene: THREE.Scene): void {
+  for (const lm of LANDMARKS) {
+    const worldZ = -lm.trackY / UNIT
+    if (lm.id === 'watchtower') buildLandmarkWatchtower(scene, -7, worldZ)
+    else if (lm.id === 'pagoda') buildLandmarkPagoda(scene, 6, worldZ)
+    else buildLandmarkLion(scene, -7, worldZ)
+  }
 }
 
 export function createStage(canvas: HTMLCanvasElement): Stage {
@@ -305,6 +430,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   buildTrees(scene)
   buildMountains(scene)
   buildWatchtowers(scene)
+  buildLandmarks(scene)
 
   window.addEventListener('resize', () => {
     const w = window.innerWidth

@@ -234,3 +234,46 @@
     gap: 6px;
   }
 }
+
+.landmark-caption {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 420px;
+  background: rgba(20, 8, 0, 0.82);
+  border: 2px solid #f7c325;
+  border-radius: 14px;
+  padding: 12px 18px;
+  pointer-events: none;
+  z-index: 60;
+  font-family: 'Courier New', Courier, monospace;
+  box-sizing: border-box;
+  animation: landmark-slidein 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes landmark-slidein {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.landmark-caption-name {
+  font-size: clamp(1rem, 4vw, 1.2rem);
+  font-weight: 800;
+  color: #f7c325;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.landmark-caption-fact {
+  font-size: clamp(0.8rem, 3vw, 0.95rem);
+  color: #dddddd;
+  line-height: 1.4;
+}
