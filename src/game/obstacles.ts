@@ -11,6 +11,35 @@ function mulberry32(seed: number): () => number {
   }
 }
 
+function packSegment(
+  rand: () => number,
+  segStart: number,
+  segEnd: number,
+  trackY: number,
+  obstacles: Obstacle[]
+): void {
+  const segWidth = segEnd - segStart
+  if (segWidth < 40) return
+
+  const blockCount = Math.max(1, Math.round(segWidth / 100))
+  const blockWidth = segWidth / blockCount
+
+  for (let i = 0; i < blockCount; i++) {
+    const blockLeft = segStart + i * blockWidth
+    const blockRight = blockLeft + blockWidth
+    const cx = (blockLeft + blockRight) / 2
+    const isStall = rand() < 0.55
+    const h = isStall ? 70 + rand() * 10 : 50 + rand() * 10
+    obstacles.push({
+      kind: isStall ? 'stall' : 'wall',
+      x: cx,
+      trackY,
+      w: blockWidth,
+      h,
+    })
+  }
+}
+
 export function createBridgeObstacles(): Obstacle[] {
   const rand = mulberry32(0xdeadbeef)
   const obstacles: Obstacle[] = []
@@ -36,32 +65,17 @@ export function createBridgeObstacles(): Obstacle[] {
     const maxShift = 120
     const shiftRange = Math.min(maxShift, (roadWidth - gapSize) / 2)
     const rawCenter = lastGapCenter + (rand() - 0.5) * 2 * shiftRange
-    const gapCenter = Math.max(ROAD_LEFT + gapSize / 2, Math.min(ROAD_RIGHT - gapSize / 2, rawCenter))
+    const gapCenter = Math.max(
+      ROAD_LEFT + gapSize / 2,
+      Math.min(ROAD_RIGHT - gapSize / 2, rawCenter)
+    )
     lastGapCenter = gapCenter
 
     const gapLeft = gapCenter - gapSize / 2
     const gapRight = gapCenter + gapSize / 2
 
-    const leftSegment = gapLeft - ROAD_LEFT
-    const rightSegment = ROAD_RIGHT - gapRight
-
-    if (leftSegment >= 50) {
-      const kind = rand() < 0.6 ? 'stall' : 'wall'
-      const w = kind === 'stall' ? 110 + rand() * 20 : 70 + rand() * 20
-      const h = kind === 'stall' ? 70 + rand() * 10 : 50 + rand() * 10
-      const maxObstacleW = Math.min(w, leftSegment)
-      const cx = ROAD_LEFT + maxObstacleW / 2
-      obstacles.push({ kind, x: cx, trackY, w: maxObstacleW, h })
-    }
-
-    if (rightSegment >= 50) {
-      const kind = rand() < 0.4 ? 'stall' : 'wall'
-      const w = kind === 'stall' ? 110 + rand() * 20 : 70 + rand() * 20
-      const h = kind === 'stall' ? 70 + rand() * 10 : 50 + rand() * 10
-      const maxObstacleW = Math.min(w, rightSegment)
-      const cx = ROAD_RIGHT - maxObstacleW / 2
-      obstacles.push({ kind, x: cx, trackY, w: maxObstacleW, h })
-    }
+    packSegment(rand, ROAD_LEFT, gapLeft, trackY, obstacles)
+    packSegment(rand, gapRight, ROAD_RIGHT, trackY, obstacles)
   }
 
   return obstacles
