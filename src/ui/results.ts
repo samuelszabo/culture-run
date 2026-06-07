@@ -91,6 +91,40 @@ function drawRewardBanner(ctx: CanvasRenderingContext2D, rewardIds: string[]): v
   ctx.fillText(names.join(', '), GAME_WIDTH / 2, bannerY + 65)
 }
 
+function drawFactText(ctx: CanvasRenderingContext2D, text: string): void {
+  const maxWidth = 360
+  const fontSize = 13
+  const lineHeight = 18
+  const startY = 545
+
+  ctx.font = `${fontSize}px monospace`
+  ctx.fillStyle = '#aaaaaa'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+
+  const words = text.split(' ')
+  const lines: string[] = []
+  let current = ''
+
+  for (const word of words) {
+    const test = current ? `${current} ${word}` : word
+    if (ctx.measureText(test).width > maxWidth && current !== '') {
+      lines.push(current)
+      current = word
+    } else {
+      current = test
+    }
+  }
+  if (current) lines.push(current)
+
+  const totalH = lines.length * lineHeight
+  const y = startY + (600 - startY - totalH) / 2
+
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], GAME_WIDTH / 2, y + i * lineHeight)
+  }
+}
+
 export function drawResults(ctx: CanvasRenderingContext2D, state: GameState): void {
   if (state.phase !== 'finished' && state.phase !== 'gameover') return
 
@@ -135,6 +169,10 @@ export function drawResults(ctx: CanvasRenderingContext2D, state: GameState): vo
 
   if (state.newRewards.length > 0 && allFilledStarsLit) {
     drawRewardBanner(ctx, state.newRewards)
+  }
+
+  if (finished && state.newRewards.length === 0) {
+    drawFactText(ctx, t('results.fact.china-bridge'))
   }
 
   drawButton(ctx, RESULTS_RESTART_RECT, t('results.restart'))

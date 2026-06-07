@@ -1,0 +1,76 @@
+.card-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  background: #1a0a00;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.card-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.card-flag {
+  font-size: 5rem;
+  line-height: 1;
+}
+
+.card-title {
+  font-size: clamp(1.3rem, 6vw, 1.8rem);
+  font-weight: 800;
+  color: #f7c325;
+  text-shadow: 2px 2px 0 #c0392b;
+  margin: 0;
+}
+
+.card-fact {
+  font-size: 1rem;
+  color: #ddd;
+  line-height: 1.6;
+  background: #2a1200;
+  border: 2px solid #f7c325;
+  border-radius: 16px;
+  padding: 20px;
+  max-width: 340px;
+  width: 100%;
+}
+
+.card-start-btn {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  min-height: 56px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: clamp(1rem, 4vw, 1.25rem);
+  font-weight: 800;
+  cursor: pointer;
+  text-align: center;
+  background: #e8192c;
+  color: #fff;
+  box-shadow: 0 5px 0 #8c0e19, 0 7px 12px rgba(0,0,0,0.4);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card-start-btn:hover {
+  background: #ff2a3f;
+  box-shadow: 0 6px 0 #8c0e19, 0 8px 16px rgba(0,0,0,0.4);
+}
+
+.card-start-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
