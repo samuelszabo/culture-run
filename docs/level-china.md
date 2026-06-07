@@ -16,7 +16,7 @@ Prvý a v v1 jediný hrateľný level. Slúži ako vzor pre všetky budúce leve
 | Dĺžka behu | ~75 sekúnd |
 | Štartová rýchlosť | základná, na konci +30 % |
 | Životy | 3 |
-| Odmena za 5★ | trblietavý chvost |
+| Odmena za 5★ | čínsky drak |
 
 ## Prekážky
 

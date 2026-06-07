@@ -67,7 +67,7 @@ Z toho vyplýva:
 
 Odmenu hráč získa **iba za 5 hviezdičiek** v leveli. Odmeny sú kozmetické vylepšenia postavičky:
 
-- **Trblietavý chvost** — častice za postavičkou počas behu (odmena za Čínu — most)
+- **Čínsky drak** — vlniaci sa dračí chvost za postavičkou počas behu (odmena za Čínu — most)
 - **Labubu vzhľad** — postavička vyzerá ako labubu (uši, zúbky); v šatníku viditeľný od začiatku ako zamknutá ukážka, odomkne ho druhý level (v2)
 - ďalšie pribudnú s novými levelmi (každý level = jedna unikátna odmena)
 
@@ -85,7 +85,7 @@ Vylepšenia sa aplikujú **na základnú postavičku** (chlapec/dievča) a dajú
 - Veselé, sýte farby vhodné pre deti
 - Každá krajina má vlastnú farebnú paletu a tematické prvky (Čína: červená/zlatá, lampióny, pagody v pozadí)
 - Pozadie sa posúva (parallax) pre dojem hĺbky
-- Jednoduché časticové efekty: zber predmetu, smrť, trblietavý chvost, konfety v cieli
+- Jednoduché časticové efekty: zber predmetu, smrť, dračí chvost, konfety v cieli
 
 ## Zvuk (v1 voliteľné, v2 isté)
 
