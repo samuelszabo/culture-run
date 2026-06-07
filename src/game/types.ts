@@ -12,7 +12,7 @@ export const INVULNERABLE_SECONDS = 2
 
 export type Character = 'boy' | 'girl' | 'cat'
 
-export type RewardId = 'dragon-tail' | 'labubu'
+export type RewardId = 'dragon-tail' | 'labubu' | 'cat-pet'
 
 export interface SaveData {
   version: number

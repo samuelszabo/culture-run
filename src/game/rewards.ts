@@ -21,4 +21,10 @@ export const REWARDS: Reward[] = [
     hintKey: 'reward.labubu.hint',
     scoreThreshold: 1010,
   },
+  {
+    id: 'cat-pet',
+    nameKey: 'reward.cat-pet',
+    hintKey: 'reward.cat-pet.hint',
+    scoreThreshold: 810,
+  },
 ]

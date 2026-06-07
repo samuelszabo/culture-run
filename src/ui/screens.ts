@@ -17,6 +17,7 @@ let callbacks: ScreensCallbacks
 const REWARD_ICONS: Record<RewardId, string> = {
   'dragon-tail': '🐉',
   'labubu': '👾',
+  'cat-pet': '🐈',
 }
 
 export function initScreens(
