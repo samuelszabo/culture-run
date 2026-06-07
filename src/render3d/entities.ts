@@ -1,6 +1,7 @@
 import * as THREE from 'three'
-import { Collectible, GameState, Obstacle, ObstacleKind } from '../game/types'
+import { Collectible, CollectibleKind, GameState, Obstacle, ObstacleKind } from '../game/types'
 import { COLLECTIBLE_WORLD_SIZE, OBSTACLE_WORLD_HEIGHTS, obstacleWorldPosition, toWorldSize, toWorldX, toWorldZ } from './world'
+import { loadModel } from './models'
 
 interface ObstacleEntry {
   obstacle: Obstacle
@@ -22,6 +23,7 @@ export interface EntityPool {
   collectibles: CollectibleEntry[]
   geometries: THREE.BufferGeometry[]
   materials: THREE.Material[]
+  disposed: boolean
 }
 
 const CULL_DISTANCE = 3500
@@ -300,6 +302,25 @@ function buildObstacleEntry(
   return { obstacle, group, normal, warning, blast }
 }
 
+function normalizeModel(model: THREE.Group): void {
+  const box = new THREE.Box3().setFromObject(model)
+  const size = box.getSize(new THREE.Vector3())
+  const maxDim = Math.max(size.x, size.y, size.z) || 1
+  model.scale.setScalar(COLLECTIBLE_WORLD_SIZE / maxDim)
+  const center = new THREE.Box3().setFromObject(model).getCenter(new THREE.Vector3())
+  model.position.set(-center.x, -center.y, -center.z)
+}
+
+function swapCollectibleModel(pool: EntityPool, kind: CollectibleKind, model: THREE.Group): void {
+  for (const entry of pool.collectibles) {
+    if (entry.collectible.kind !== kind) continue
+    const instance = model.clone()
+    normalizeModel(instance)
+    entry.group.clear()
+    entry.group.add(instance)
+  }
+}
+
 function buildCollectibleEntry(
   collectible: Collectible,
   scene: THREE.Scene,
@@ -337,7 +358,17 @@ export function createEntities(scene: THREE.Scene, state: GameState): EntityPool
     buildCollectibleEntry(collectible, scene, geometries, materials),
   )
 
-  return { scene, obstacles, collectibles, geometries, materials }
+  const pool: EntityPool = { scene, obstacles, collectibles, geometries, materials, disposed: false }
+
+  const kinds: CollectibleKind[] = ['noodles', 'baozi', 'tea']
+  for (const kind of kinds) {
+    loadModel(kind).then((model) => {
+      if (!model || pool.disposed) return
+      swapCollectibleModel(pool, kind, model)
+    })
+  }
+
+  return pool
 }
 
 export function updateEntities(pool: EntityPool, state: GameState): void {
@@ -388,6 +419,7 @@ export function updateEntities(pool: EntityPool, state: GameState): void {
 }
 
 export function disposeEntities(pool: EntityPool): void {
+  pool.disposed = true
   for (const entry of pool.obstacles) {
     pool.scene.remove(entry.group)
   }
