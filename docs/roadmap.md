@@ -4,13 +4,13 @@
 
 Cieľ: hrateľná, pekná, kompletná slučka s jedným levelom. Všetko ostatné počká.
 
-### Fáza 1 — základ hry
-- [ ] Projekt: Vite + TypeScript, štruktúra priečinkov, i18n so `sk.json`
-- [ ] Game loop (fixed timestep), škálovanie canvasu, portrait layout
-- [ ] Postavička: pohyb do strán, klávesnica (šípky + AWSD)
-- [ ] Dotykové ovládanie (drag-to-move)
-- [ ] Posúvajúca sa trať so statickými prekážkami, AABB kolízie
-- [ ] Smrť, 3 životy, nesmrteľnosť po smrti, koniec po 3 smrtiach
+### Fáza 1 — základ hry ✅
+- [x] Projekt: Vite + TypeScript, štruktúra priečinkov, i18n so `sk.json`
+- [x] Game loop (fixed timestep), škálovanie canvasu, portrait layout
+- [x] Postavička: pohyb do strán, klávesnica (šípky + AWSD)
+- [x] Dotykové ovládanie (drag-to-move)
+- [x] Posúvajúca sa trať so statickými prekážkami, AABB kolízie
+- [x] Smrť, 3 životy, nesmrteľnosť po smrti, koniec po 3 smrtiach
 
 ### Fáza 2 — herný obsah
 - [ ] Zbierateľné predmety + skóre
