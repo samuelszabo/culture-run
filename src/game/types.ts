@@ -10,7 +10,7 @@ export const STARTING_LIVES = 3
 export const DEATH_PAUSE_SECONDS = 1.5
 export const INVULNERABLE_SECONDS = 2
 
-export type Character = 'boy' | 'girl'
+export type Character = 'boy' | 'girl' | 'cat'
 
 export type RewardId = 'dragon-tail' | 'labubu'
 

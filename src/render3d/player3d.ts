@@ -28,6 +28,11 @@ export interface Player3D {
   dragonHornR: THREE.Mesh | null
   dragonEyeL: THREE.Mesh | null
   dragonEyeR: THREE.Mesh | null
+  catEarL: THREE.Mesh | null
+  catEarR: THREE.Mesh | null
+  catSnout: THREE.Mesh | null
+  catNose: THREE.Mesh | null
+  catTailSegments: THREE.Mesh[]
   scene: THREE.Scene
 }
 
@@ -65,36 +70,45 @@ function makeLimbGroup(mesh: THREE.Mesh, limbHeight: number, pivotY: number): TH
   return g
 }
 
+const CAT_ORANGE = 0xf28c28
+const CAT_CREAM = 0xfff0d0
+const CAT_PINK = 0xf4a0b0
+
 export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
+  const isCat = state.character === 'cat'
   const group = new THREE.Group()
   const body = new THREE.Group()
   group.add(body)
 
-  const headMesh = box(BODY_W * 0.88, HEAD_H, BODY_D * 0.88, 0xf5c07a)
+  const headColor = isCat ? CAT_ORANGE : 0xf5c07a
+  const headMesh = box(BODY_W * 0.88, HEAD_H, BODY_D * 0.88, headColor)
   headMesh.position.set(0, HEAD_Y_CENTER, 0)
   body.add(headMesh)
 
-  const torsoColor = state.character === 'boy' ? 0x3a7bd5 : 0xe87fac
+  const torsoColor = isCat ? CAT_ORANGE : state.character === 'boy' ? 0x3a7bd5 : 0xe87fac
   const torsoMesh = box(BODY_W, TORSO_H, BODY_D, torsoColor)
   torsoMesh.position.set(0, TORSO_Y_BOTTOM + TORSO_H / 2, 0)
   body.add(torsoMesh)
 
-  const armMesh = box(ARM_W, ARM_H, ARM_W, 0xf5c07a)
+  const limbSkinColor = isCat ? CAT_ORANGE : 0xf5c07a
+  const legColor = isCat ? CAT_ORANGE : 0x2c3e7a
+
+  const armMesh = box(ARM_W, ARM_H, ARM_W, limbSkinColor)
   const armLGroup = makeLimbGroup(armMesh, ARM_H, TORSO_Y_TOP - ARM_H * 0.1)
   armLGroup.position.setX(-(BODY_W / 2 + ARM_W / 2))
 
-  const armMeshR = box(ARM_W, ARM_H, ARM_W, 0xf5c07a)
+  const armMeshR = box(ARM_W, ARM_H, ARM_W, limbSkinColor)
   const armRGroup = makeLimbGroup(armMeshR, ARM_H, TORSO_Y_TOP - ARM_H * 0.1)
   armRGroup.position.setX(BODY_W / 2 + ARM_W / 2)
 
   body.add(armLGroup)
   body.add(armRGroup)
 
-  const legMeshL = box(LEG_W, LEG_H, LEG_W, 0x2c3e7a)
+  const legMeshL = box(LEG_W, LEG_H, LEG_W, legColor)
   const legLGroup = makeLimbGroup(legMeshL, LEG_H, LEG_Y_TOP)
   legLGroup.position.setX(-LEG_W * 0.7)
 
-  const legMeshR = box(LEG_W, LEG_H, LEG_W, 0x2c3e7a)
+  const legMeshR = box(LEG_W, LEG_H, LEG_W, legColor)
   const legRGroup = makeLimbGroup(legMeshR, LEG_H, LEG_Y_TOP)
   legRGroup.position.setX(LEG_W * 0.7)
 
@@ -157,6 +171,66 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
       tooth.position.set(toothsStartX + i * toothW, teethY, BODY_D * 0.45)
       body.add(tooth)
       labubuTeeth.push(tooth)
+    }
+  }
+
+  let catEarL: THREE.Mesh | null = null
+  let catEarR: THREE.Mesh | null = null
+  let catSnout: THREE.Mesh | null = null
+  let catNose: THREE.Mesh | null = null
+  const catTailSegments: THREE.Mesh[] = []
+
+  if (isCat) {
+    const earW = H * 0.10
+    const earH = H * 0.12
+    const earInnerW = earW * 0.55
+    const earInnerH = earH * 0.65
+
+    catEarL = box(earW, earH, earW * 0.4, CAT_ORANGE)
+    catEarL.position.set(-(BODY_W * 0.88 / 2 - earW * 0.3), HEAD_Y_BOTTOM + HEAD_H + earH / 2, 0)
+    body.add(catEarL)
+
+    catEarR = box(earW, earH, earW * 0.4, CAT_ORANGE)
+    catEarR.position.set(BODY_W * 0.88 / 2 - earW * 0.3, HEAD_Y_BOTTOM + HEAD_H + earH / 2, 0)
+    body.add(catEarR)
+
+    const earInnerL = box(earInnerW, earInnerH, earW * 0.25, CAT_PINK)
+    earInnerL.position.set(-(BODY_W * 0.88 / 2 - earW * 0.3), HEAD_Y_BOTTOM + HEAD_H + earH / 2 + earH * 0.05, BODY_D * 0.22)
+    body.add(earInnerL)
+
+    const earInnerR = box(earInnerW, earInnerH, earW * 0.25, CAT_PINK)
+    earInnerR.position.set(BODY_W * 0.88 / 2 - earW * 0.3, HEAD_Y_BOTTOM + HEAD_H + earH / 2 + earH * 0.05, BODY_D * 0.22)
+    body.add(earInnerR)
+
+    const snoutW = H * 0.18
+    const snoutH = H * 0.09
+    catSnout = box(snoutW, snoutH, H * 0.06, CAT_CREAM)
+    catSnout.position.set(0, HEAD_Y_CENTER - HEAD_H * 0.12, BODY_D * 0.47)
+    body.add(catSnout)
+
+    catNose = box(H * 0.06, H * 0.04, H * 0.04, CAT_PINK)
+    catNose.position.set(0, HEAD_Y_CENTER + HEAD_H * 0.04, BODY_D * 0.5)
+    body.add(catNose)
+
+    const stripeColor = 0xc8680a
+    const stripeH = H * 0.025
+    const stripeW = BODY_W * 0.85
+    const stripe1 = box(stripeW, stripeH, BODY_D * 1.02, stripeColor)
+    stripe1.position.set(0, TORSO_Y_BOTTOM + TORSO_H * 0.35, 0)
+    body.add(stripe1)
+
+    const stripe2 = box(stripeW, stripeH, BODY_D * 1.02, stripeColor)
+    stripe2.position.set(0, TORSO_Y_BOTTOM + TORSO_H * 0.65, 0)
+    body.add(stripe2)
+
+    const tailSegCount = 4
+    const tailSegSize0 = H * 0.11
+    for (let i = 0; i < tailSegCount; i++) {
+      const t = i / (tailSegCount - 1)
+      const size = tailSegSize0 * (1 - t * 0.4)
+      const tailSeg = box(size, size, size, CAT_ORANGE)
+      body.add(tailSeg)
+      catTailSegments.push(tailSeg)
     }
   }
 
@@ -240,6 +314,11 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     dragonHornR,
     dragonEyeL,
     dragonEyeR,
+    catEarL,
+    catEarR,
+    catSnout,
+    catNose,
+    catTailSegments,
     scene,
   }
 }
@@ -276,6 +355,23 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
     group.position.y = bounce
     armLGroup.rotation.x = -Math.PI * 0.6
     armRGroup.rotation.x = -Math.PI * 0.6
+  }
+
+  if (p.catTailSegments.length > 0) {
+    const tailSegCount = p.catTailSegments.length
+    const tailStep = H * 0.13
+    const tailAttachY = TORSO_Y_BOTTOM + TORSO_H * 0.75
+    const tailAttachZ = BODY_D * 0.4
+
+    for (let i = 0; i < tailSegCount; i++) {
+      const seg = p.catTailSegments[i]
+      const t = (i + 1) / tailSegCount
+      const wave = Math.sin(elapsed * 3.5 + i * 0.9) * 0.05
+      const segX = wave
+      const segY = tailAttachY + t * tailStep * 2.2
+      const segZ = tailAttachZ + t * tailStep
+      seg.position.set(segX, segY, segZ)
+    }
   }
 
   if (dragonGroup && dragonSegments.length > 0) {

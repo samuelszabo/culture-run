@@ -216,6 +216,52 @@
   right: 4px;
 }
 
+.character-figure--cat .char-head {
+  border-radius: 50% 50% 40% 40%;
+  background: #f28c28;
+}
+
+.character-figure--cat .char-body {
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 32px;
+  background: #f28c28;
+  border-radius: 4px;
+}
+
+.cat-ear {
+  position: absolute;
+  top: -10px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 12px solid #f7c325;
+}
+
+.cat-ear--left {
+  left: 6px;
+}
+
+.cat-ear--right {
+  right: 6px;
+}
+
+.cat-tail {
+  position: absolute;
+  bottom: 0;
+  right: -8px;
+  width: 8px;
+  height: 28px;
+  background: #f7c325;
+  border-radius: 4px 4px 6px 6px;
+  transform: rotate(12deg);
+  transform-origin: bottom center;
+}
+
 .country-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -384,4 +430,58 @@
   font-size: 0.8rem;
   color: #888;
   font-style: italic;
+}
+
+.wardrobe-character-switcher {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 360px;
+}
+
+.wardrobe-mini-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #2a1200;
+  border: 2px solid #444;
+  border-radius: 14px;
+  padding: 12px 10px;
+  min-width: 88px;
+  min-height: 48px;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wardrobe-mini-card:hover,
+.wardrobe-mini-card:focus {
+  background: #3d1a00;
+  outline: none;
+}
+
+.wardrobe-mini-card:active {
+  transform: scale(0.97);
+}
+
+.wardrobe-mini-card--active {
+  border-color: #f7c325;
+  background: #3d1a00;
+}
+
+.wardrobe-mini-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #f7c325;
+}
+
+.character-figure--mini {
+  transform: scale(0.55);
+  transform-origin: top center;
+  height: 55px;
+  width: 64px;
+  flex-shrink: 0;
 }

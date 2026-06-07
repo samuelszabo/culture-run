@@ -89,6 +89,7 @@ function renderCharacter(): void {
 
   grid.appendChild(characterCard('boy'))
   grid.appendChild(characterCard('girl'))
+  grid.appendChild(characterCard('cat'))
 
   wrap.appendChild(grid)
 
@@ -99,30 +100,35 @@ function renderCharacter(): void {
   ui.appendChild(wrap)
 }
 
+function createCharacterFigure(character: Character): HTMLDivElement {
+  const figure = div(`character-figure character-figure--${character}`)
+  figure.appendChild(div('char-head'))
+  figure.appendChild(div('char-body'))
+  figure.appendChild(div('char-legs'))
+
+  if (character === 'girl') {
+    figure.appendChild(div('braid braid-left'))
+    figure.appendChild(div('braid braid-right'))
+  }
+
+  if (character === 'cat') {
+    figure.appendChild(div('cat-ear cat-ear--left'))
+    figure.appendChild(div('cat-ear cat-ear--right'))
+    figure.appendChild(div('cat-tail'))
+  }
+
+  return figure
+}
+
 function characterCard(character: Character): HTMLElement {
   const card = div('character-card')
   card.setAttribute('role', 'button')
   card.setAttribute('tabindex', '0')
 
-  const figure = div(`character-figure character-figure--${character}`)
-  const head = div('char-head')
-  figure.appendChild(head)
-  const body = div('char-body')
-  figure.appendChild(body)
-  const legs = div('char-legs')
-  figure.appendChild(legs)
-
-  if (character === 'girl') {
-    const braidLeft = div('braid braid-left')
-    const braidRight = div('braid braid-right')
-    figure.appendChild(braidLeft)
-    figure.appendChild(braidRight)
-  }
-
   const label = el('span', 'character-label')
   label.textContent = t(`character.${character}`)
 
-  card.appendChild(figure)
+  card.appendChild(createCharacterFigure(character))
   card.appendChild(label)
 
   const selectCharacter = () => {
@@ -239,21 +245,38 @@ function renderWardrobe(): void {
 
   const preview = div('wardrobe-preview')
   const wardrobeCharacter = save.character ?? 'boy'
-  const figure = div(`character-figure character-figure--${wardrobeCharacter}`)
-  const head = div('char-head')
-  figure.appendChild(head)
-  const body = div('char-body')
-  figure.appendChild(body)
-  const legs = div('char-legs')
-  figure.appendChild(legs)
-
-  if (wardrobeCharacter === 'girl') {
-    figure.appendChild(div('braid braid-left'))
-    figure.appendChild(div('braid braid-right'))
-  }
-
-  preview.appendChild(figure)
+  preview.appendChild(createCharacterFigure(wardrobeCharacter))
   wrap.appendChild(preview)
+
+  const characterLabel = el('h3', 'screen-title')
+  characterLabel.textContent = t('wardrobe.character')
+  wrap.appendChild(characterLabel)
+
+  const characterSwitcher = div('wardrobe-character-switcher')
+  const characters: Character[] = ['boy', 'girl', 'cat']
+  for (const ch of characters) {
+    const miniCard = div(`wardrobe-mini-card${ch === wardrobeCharacter ? ' wardrobe-mini-card--active' : ''}`)
+    miniCard.setAttribute('role', 'button')
+    miniCard.setAttribute('tabindex', '0')
+    miniCard.setAttribute('aria-pressed', String(ch === wardrobeCharacter))
+    const miniFigure = createCharacterFigure(ch)
+    miniFigure.classList.add('character-figure--mini')
+    miniCard.appendChild(miniFigure)
+    const miniLabel = el('span', 'wardrobe-mini-label')
+    miniLabel.textContent = t(`character.${ch}`)
+    miniCard.appendChild(miniLabel)
+    const selectCh = () => {
+      save.character = ch
+      persist()
+      renderScreen('wardrobe')
+    }
+    miniCard.addEventListener('click', selectCh)
+    miniCard.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') selectCh()
+    })
+    characterSwitcher.appendChild(miniCard)
+  }
+  wrap.appendChild(characterSwitcher)
 
   const list = div('reward-list')
 
