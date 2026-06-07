@@ -359,36 +359,41 @@ function buildLandmarkPagoda(scene: THREE.Scene, x: number, z: number): void {
   group.add(spire)
 }
 
-function buildLandmarkLion(scene: THREE.Scene, x: number, z: number): void {
+function buildOneLion(scene: THREE.Scene, lx: number, z: number, withBall: boolean): void {
   const stoneMat = new THREE.MeshLambertMaterial({ color: 0xb0a888, flatShading: true })
   const darkStoneMat = new THREE.MeshLambertMaterial({ color: 0x888070, flatShading: true })
 
-  for (const side of [-1, 1] as const) {
-    const lx = x + side * 1.8
+  const group = new THREE.Group()
+  group.position.set(lx, 0, z)
+  group.scale.setScalar(1.6)
+  scene.add(group)
 
-    const pedestal = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.55, 1.1), darkStoneMat)
-    pedestal.position.set(lx, 0.275, z)
-    scene.add(pedestal)
+  const pedestal = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.75, 1.1), darkStoneMat)
+  pedestal.position.set(0, 0.375, 0)
+  group.add(pedestal)
 
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.75, 1.3), stoneMat)
-    body.position.set(lx, 0.93, z)
-    scene.add(body)
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.75, 1.3), stoneMat)
+  body.position.set(0, 1.13, 0)
+  group.add(body)
 
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.65, 0.65), stoneMat)
-    head.position.set(lx, 1.65, z + 0.2)
-    scene.add(head)
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.65, 0.65), stoneMat)
+  head.position.set(0, 1.85, 0.2)
+  group.add(head)
 
-    const maneGeo = new THREE.BoxGeometry(0.95, 0.75, 0.3)
-    const mane = new THREE.Mesh(maneGeo, darkStoneMat)
-    mane.position.set(lx, 1.6, z + 0.55)
-    scene.add(mane)
+  const mane = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.75, 0.3), darkStoneMat)
+  mane.position.set(0, 1.8, 0.55)
+  group.add(mane)
 
-    if (side === 1) {
-      const ball = new THREE.Mesh(new THREE.SphereGeometry(0.2, 5, 4), stoneMat)
-      ball.position.set(lx - 0.3, 0.6, z + 0.5)
-      scene.add(ball)
-    }
+  if (withBall) {
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.2, 5, 4), stoneMat)
+    ball.position.set(-0.3, 0.8, 0.5)
+    group.add(ball)
   }
+}
+
+function buildLandmarkLion(scene: THREE.Scene, _x: number, z: number): void {
+  buildOneLion(scene, -4.6, z, false)
+  buildOneLion(scene, 4.6, z, true)
 }
 
 function buildLandmarks(scene: THREE.Scene): void {
