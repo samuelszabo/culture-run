@@ -3,7 +3,7 @@ export const GAME_HEIGHT = 800
 export const ROAD_LEFT = 60
 export const ROAD_RIGHT = GAME_WIDTH - 60
 export const PLAYER_SCREEN_Y = 620
-export const TRACK_LENGTH = 9000
+export const TRACK_LENGTH = 20000
 export const BASE_SPEED = 240
 export const PLAYER_MOVE_SPEED = 340
 export const STARTING_LIVES = 3
@@ -23,7 +23,7 @@ export interface InputState {
   touchTargetX: number | null
 }
 
-export type ObstacleKind = 'stall' | 'wall'
+export type ObstacleKind = 'stall' | 'wall' | 'walker' | 'carrier' | 'firecracker'
 
 export interface Obstacle {
   kind: ObstacleKind
@@ -31,7 +31,25 @@ export interface Obstacle {
   trackY: number
   w: number
   h: number
+  vx?: number
+  minX?: number
+  maxX?: number
+  harmless?: boolean
+  warning?: boolean
+  timer?: number
 }
+
+export type CollectibleKind = 'noodles' | 'baozi' | 'tea'
+
+export interface Collectible {
+  kind: CollectibleKind
+  x: number
+  trackY: number
+  points: number
+  collected: boolean
+}
+
+export const COLLECTIBLE_SIZE = 28
 
 export type GamePhase = 'running' | 'dying' | 'finished' | 'gameover'
 
@@ -46,6 +64,8 @@ export interface GameState {
   phase: GamePhase
   player: Player
   obstacles: Obstacle[]
+  collectibles: Collectible[]
+  maxScore: number
   distance: number
   speed: number
   lives: number
@@ -58,11 +78,13 @@ export function createInputState(): InputState {
   return { leftHeld: false, rightHeld: false, touchTargetX: null }
 }
 
-export function createGameState(obstacles: Obstacle[]): GameState {
+export function createGameState(obstacles: Obstacle[], collectibles: Collectible[]): GameState {
   return {
     phase: 'running',
     player: { x: GAME_WIDTH / 2, w: 36, h: 48, invulnerableFor: 0 },
     obstacles,
+    collectibles,
+    maxScore: collectibles.reduce((sum, c) => sum + c.points, 0),
     distance: 0,
     speed: BASE_SPEED,
     lives: STARTING_LIVES,
@@ -91,5 +113,14 @@ export function obstacleBox(obstacle: Obstacle, distance: number): AABB {
     y: obstacleScreenY(obstacle, distance) - obstacle.h,
     w: obstacle.w,
     h: obstacle.h,
+  }
+}
+
+export function collectibleBox(collectible: Collectible, distance: number): AABB {
+  return {
+    x: collectible.x - COLLECTIBLE_SIZE / 2,
+    y: PLAYER_SCREEN_Y - (collectible.trackY - distance) - COLLECTIBLE_SIZE / 2,
+    w: COLLECTIBLE_SIZE,
+    h: COLLECTIBLE_SIZE,
   }
 }

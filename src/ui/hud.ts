@@ -1,4 +1,4 @@
-import { GameState, GAME_HEIGHT, GAME_WIDTH, STARTING_LIVES, TRACK_LENGTH } from '../game/types'
+import { GameState, GAME_WIDTH, STARTING_LIVES, TRACK_LENGTH } from '../game/types'
 import { t } from '../i18n/strings'
 
 const HEART_SIZE = 20
@@ -68,24 +68,3 @@ function drawScore(ctx: CanvasRenderingContext2D, score: number): void {
   ctx.fillText(`${t('hud.score')}: ${score}`, GAME_WIDTH - HUD_PADDING, HUD_PADDING)
 }
 
-export function drawPhaseOverlay(ctx: CanvasRenderingContext2D, state: GameState): void {
-  if (state.phase !== 'finished' && state.phase !== 'gameover') return
-
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.65)'
-  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
-
-  const mainText = state.phase === 'finished' ? t('game.finished') : t('game.over')
-  const mainColor = state.phase === 'finished' ? '#f7c325' : '#e8192c'
-
-  ctx.fillStyle = mainColor
-  ctx.font = 'bold 64px monospace'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(mainText, GAME_WIDTH / 2, 340)
-
-  ctx.fillStyle = '#ffffff'
-  ctx.font = 'bold 18px monospace'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(t('game.restart'), GAME_WIDTH / 2, 430)
-}

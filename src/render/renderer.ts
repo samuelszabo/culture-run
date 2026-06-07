@@ -2,6 +2,8 @@ import {
   GAME_HEIGHT,
   GAME_WIDTH,
   GameState,
+  PLAYER_SCREEN_Y,
+  TRACK_LENGTH,
   obstacleBox,
   playerBox,
 } from '../game/types'
@@ -62,8 +64,20 @@ const OBSTACLE_COLORS: Record<string, string> = {
 
 export function drawWorld(ctx: CanvasRenderingContext2D, state: GameState): void {
   drawRoad(ctx, state.distance)
+  drawFinishLine(ctx, state.distance)
   drawObstacles(ctx, state)
-  drawPlayer(ctx, state)
+}
+
+function drawFinishLine(ctx: CanvasRenderingContext2D, distance: number): void {
+  const y = PLAYER_SCREEN_Y - (TRACK_LENGTH - distance)
+  if (y < -40 || y > GAME_HEIGHT + 40) return
+  const tile = 20
+  for (let i = 0; (i * tile) < GAME_WIDTH - 120; i++) {
+    ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#222222'
+    ctx.fillRect(60 + i * tile, y - 20, Math.min(tile, GAME_WIDTH - 120 - i * tile), 10)
+    ctx.fillStyle = i % 2 === 0 ? '#222222' : '#ffffff'
+    ctx.fillRect(60 + i * tile, y - 10, Math.min(tile, GAME_WIDTH - 120 - i * tile), 10)
+  }
 }
 
 function drawRoad(ctx: CanvasRenderingContext2D, distance: number): void {
@@ -87,6 +101,7 @@ function drawRoad(ctx: CanvasRenderingContext2D, distance: number): void {
 
 function drawObstacles(ctx: CanvasRenderingContext2D, state: GameState): void {
   for (const obstacle of state.obstacles) {
+    if (obstacle.kind !== 'stall' && obstacle.kind !== 'wall') continue
     const box = obstacleBox(obstacle, state.distance)
     if (box.y + box.h < -50 || box.y > GAME_HEIGHT + 50) continue
     ctx.fillStyle = OBSTACLE_COLORS[obstacle.kind] ?? '#555'
@@ -96,7 +111,7 @@ function drawObstacles(ctx: CanvasRenderingContext2D, state: GameState): void {
   }
 }
 
-function drawPlayer(ctx: CanvasRenderingContext2D, state: GameState): void {
+export function drawPlayer(ctx: CanvasRenderingContext2D, state: GameState): void {
   const player = state.player
   const blinking = player.invulnerableFor > 0 && Math.floor(state.elapsed * 10) % 2 === 0
   if (blinking) return

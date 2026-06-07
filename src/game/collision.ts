@@ -18,6 +18,7 @@ export function findCollision(state: GameState): Obstacle | null {
   const cullMargin = 150
 
   for (const obstacle of state.obstacles) {
+    if (obstacle.harmless) continue
     if (
       obstacle.trackY < state.distance - cullMargin ||
       obstacle.trackY > state.distance + cullMargin
