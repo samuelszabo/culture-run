@@ -1,13 +1,13 @@
-# Level: Čína — Čínsky most
+# Level: Čína — Veľký čínsky múr
 
-Prvý a v v1 jediný hrateľný level. Slúži ako vzor pre všetky budúce levely — jeho štruktúra (dáta levelu, tematické prvky, odmena) sa bude opakovať.
+Prvý a v v1 jediný hrateľný level (interné id zostáva `china-bridge`). Slúži ako vzor pre všetky budúce levely — jeho štruktúra (dáta levelu, tematické prvky, odmena) sa bude opakovať.
 
 ## Prostredie
 
-- **Miesto:** kamenný most v Číne (inšpirácia: oblúkové mosty v záhradách, most pri Veľkom múre)
-- **Paleta:** červená, zlatá, sivý kameň, zelená voda pod mostom
-- **Pozadie (parallax):** hory v opare, pagody, lampióny zavesené nad mostom
-- **Cesta:** kamenná dlažba mosta so zábradlím po stranách
+- **Miesto:** Veľký čínsky múr vedúci ponad zalesnené kopce
+- **Paleta:** červená, zlatá, sivý kameň, lesná zelená pod múrom
+- **Pozadie:** zalesnené kopce a hory v opare, strážne veže, lampióny na cimburí
+- **Cesta:** kamenná dlažba múru s cimburím po stranách
 
 ## Parametre
 
