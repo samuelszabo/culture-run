@@ -67,13 +67,11 @@ Z toho vyplýva:
 
 Odmenu hráč získa **iba za 5 hviezdičiek** v leveli. Odmeny sú kozmetické vylepšenia postavičky:
 
-- **Trblietavý chvost** — častice za postavičkou počas behu
-- **Labubu vzhľad** — postavička vyzerá ako labubu (uši, zúbky)
+- **Trblietavý chvost** — častice za postavičkou počas behu (odmena za Čínu — most)
+- **Labubu vzhľad** — postavička vyzerá ako labubu (uši, zúbky); v šatníku viditeľný od začiatku ako zamknutá ukážka, odomkne ho druhý level (v2)
 - ďalšie pribudnú s novými levelmi (každý level = jedna unikátna odmena)
 
-Vylepšenia sa aplikujú **na základnú postavičku** (chlapec/dievča) a dajú sa kombinovať. Hráč si ich zapína/vypína v šatníku na úvodnej obrazovke. Odomknuté vylepšenia zostávajú uložené v zariadení.
-
-**Odmena za Čínu (most): trblietavý chvost.**
+Vylepšenia sa aplikujú **na základnú postavičku** (chlapec/dievča) a dajú sa kombinovať. Hráč si ich zapína/vypína v šatníku na úvodnej obrazovke. Odomknuté vylepšenia zostávajú uložené v zariadení. Zamknuté vylepšenia sú v šatníku viditeľné sivé so zámkom — motivácia hrať ďalej.
 
 ## Postavička
 

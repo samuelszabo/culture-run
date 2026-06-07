@@ -55,8 +55,8 @@ Princípy: žiadne zbytočné abstrakcie, level je dáta (zoznam entít s pozíc
 - **Esc / P** — pauza
 
 ### Dotyk (mobil)
-- **Ťahanie prstom (drag)** — postavička plynulo nasleduje horizontálnu pozíciu prsta (s vyhladením); prst môže byť kdekoľvek na obrazovke, postavička kopíruje jeho pohyb do strán
-- Funguje aj krátke podržanie pri okraji — postavička sa hýbe smerom k prstu
+- **Sledovanie prsta** — postavička plynulo nasleduje horizontálnu pozíciu prsta na obrazovke (absolútna pozícia s vyhladením); kde je prst, tam beží postavička
+- Prst môže byť kdekoľvek vertikálne — počíta sa iba jeho horizontálna pozícia
 - **Tlačidlo pauzy** v rohu obrazovky
 
 Toto je kľúčové rozhodnutie pre voľný pohyb na mobile — drag-to-move je presný a intuitívny, netreba virtuálny joystick.
