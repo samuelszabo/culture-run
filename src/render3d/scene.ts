@@ -10,6 +10,7 @@ import {
   CAMERA_LATERAL_FOLLOW,
   playerWorldPosition,
 } from './world'
+import { ANTIALIAS, DPR_CAP, FOG_NEAR, FOG_FAR, TREE_DENSITY } from './quality'
 
 export interface Stage {
   scene: THREE.Scene
@@ -164,7 +165,7 @@ function buildTerrain(scene: THREE.Scene): void {
   }
 }
 
-function buildTrees(scene: THREE.Scene): void {
+function buildTrees(scene: THREE.Scene, density: number = 1.0): void {
   const treePositions: Array<{ x: number; z: number; s: number }> = []
   const rng = { v: 42 }
   function rand(): number {
@@ -172,8 +173,10 @@ function buildTrees(scene: THREE.Scene): void {
     return (rng.v >>> 0) / 0xffffffff
   }
 
-  for (let iz = 0; iz < 80; iz++) {
-    const z = TRACK_Z_START - iz * (TRACK_LENGTH_WORLD / 80) - 2
+  const treeSlots = Math.max(1, Math.round(80 * density))
+  for (let iz = 0; iz < treeSlots; iz++) {
+    // Distribute evenly across the full track regardless of slot count
+    const z = TRACK_Z_START - iz * (TRACK_LENGTH_WORLD / treeSlots) - 2
     const side = iz % 2 === 0 ? -1 : 1
     const x = side * (RAILING_X + 2.5 + rand() * 8)
     treePositions.push({ x, z, s: 0.7 + rand() * 0.7 })
@@ -406,8 +409,9 @@ function buildLandmarks(scene: THREE.Scene): void {
 }
 
 export function createStage(canvas: HTMLCanvasElement): Stage {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
+  // antialias must be decided at creation time; disabled on low-tier devices
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: ANTIALIAS })
+  renderer.setPixelRatio(Math.min(devicePixelRatio, DPR_CAP))
   renderer.setSize(window.innerWidth, window.innerHeight)
 
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500)
@@ -416,7 +420,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
 
   const scene = new THREE.Scene()
   scene.background = new THREE.Color(SKY_COLOR)
-  scene.fog = new THREE.Fog(SKY_COLOR, 45, 70)
+  // Fog distances are shorter on low tier → fewer fragments shaded per frame
+  scene.fog = new THREE.Fog(SKY_COLOR, FOG_NEAR, FOG_FAR)
 
   const ambient = new THREE.AmbientLight(0xfff4d6, 0.7)
   scene.add(ambient)
@@ -432,7 +437,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   buildMerlons(scene)
   buildLanterns(scene)
   buildTerrain(scene)
-  buildTrees(scene)
+  buildTrees(scene, TREE_DENSITY)
   buildMountains(scene)
   buildWatchtowers(scene)
   buildLandmarks(scene)
@@ -440,6 +445,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   window.addEventListener('resize', () => {
     const w = window.innerWidth
     const h = window.innerHeight
+    // Re-apply the capped ratio in case the OS DPR changed (e.g. display switch)
+    renderer.setPixelRatio(Math.min(devicePixelRatio, DPR_CAP))
     renderer.setSize(w, h)
     camera.aspect = w / h
     camera.updateProjectionMatrix()

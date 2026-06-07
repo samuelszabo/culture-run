@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { Collectible, CollectibleKind, GameState, Obstacle, ObstacleKind } from '../game/types'
 import { COLLECTIBLE_WORLD_SIZE, OBSTACLE_WORLD_HEIGHTS, obstacleWorldPosition, toWorldSize, toWorldX, toWorldZ } from './world'
 import { loadModel } from './models'
+import { ANIM_CULL_DISTANCE } from './quality'
 
 interface ObstacleEntry {
   obstacle: Obstacle
@@ -372,6 +373,9 @@ export function createEntities(scene: THREE.Scene, state: GameState): EntityPool
 }
 
 export function updateEntities(pool: EntityPool, state: GameState): void {
+  // Pre-compute blink state once — used by any visible firecracker in warning mode
+  const warningBlink = Math.floor(state.elapsed * 8) % 2 === 0
+
   for (const entry of pool.obstacles) {
     const o = entry.obstacle
     const distanceDelta = Math.abs(o.trackY - state.distance)
@@ -387,18 +391,21 @@ export function updateEntities(pool: EntityPool, state: GameState): void {
     entry.group.position.z = pos.z
 
     if (o.kind === 'firecracker' && entry.normal && entry.warning && entry.blast) {
-      if (o.warning) {
-        entry.normal.visible = false
-        entry.blast.visible = false
-        entry.warning.visible = Math.floor(state.elapsed * 8) % 2 === 0
-      } else if (o.harmless === false) {
-        entry.normal.visible = false
-        entry.warning.visible = false
-        entry.blast.visible = true
-      } else {
-        entry.normal.visible = true
-        entry.warning.visible = false
-        entry.blast.visible = false
+      // Only update blink state when the obstacle is within the animated/visible range
+      if (distanceDelta <= ANIM_CULL_DISTANCE) {
+        if (o.warning) {
+          entry.normal.visible = false
+          entry.blast.visible = false
+          entry.warning.visible = warningBlink
+        } else if (o.harmless === false) {
+          entry.normal.visible = false
+          entry.warning.visible = false
+          entry.blast.visible = true
+        } else {
+          entry.normal.visible = true
+          entry.warning.visible = false
+          entry.blast.visible = false
+        }
       }
     }
   }
@@ -411,7 +418,9 @@ export function updateEntities(pool: EntityPool, state: GameState): void {
     const withinRange = distanceDelta <= CULL_DISTANCE
     entry.group.visible = withinRange && !c.collected
 
-    if (entry.group.visible) {
+    // Animate (bob + spin) only within camera-visible range (≤ fog end distance).
+    // Items beyond that are hidden by fog anyway; skipping saves sin/float work per frame.
+    if (entry.group.visible && distanceDelta <= ANIM_CULL_DISTANCE) {
       entry.group.position.y = entry.baseY + Math.sin(state.elapsed * 3 + i) * 0.08
       entry.group.rotation.y = state.elapsed * 1.2 + i
     }

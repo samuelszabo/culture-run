@@ -215,6 +215,8 @@ export function collectPickups(state: GameState): void {
     if (intersects(pBox, cBox)) {
       c.collected = true
       state.score += c.points
+      state.lastCollected.kind = c.kind
+      state.lastCollected.seq++
     }
   }
 }

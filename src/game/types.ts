@@ -21,6 +21,7 @@ export interface SaveData {
   equippedRewards: RewardId[]
   bestScores: Record<string, { score: number; stars: number }>
   settings: { sound: boolean; language: string }
+  album: { foods: string[]; landmarks: string[] }
 }
 
 export interface AABB {
@@ -89,6 +90,7 @@ export interface GameState {
   elapsed: number
   endedAt: number | null
   newRewards: RewardId[]
+  lastCollected: { kind: string; seq: number }
 }
 
 export function createInputState(): InputState {
@@ -117,6 +119,7 @@ export function createGameState(
     elapsed: 0,
     endedAt: null,
     newRewards: [],
+    lastCollected: { kind: '', seq: 0 },
   }
 }
 

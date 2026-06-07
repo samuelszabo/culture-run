@@ -7,9 +7,16 @@ const STARS_COUNT = 5
 
 let overlay: HTMLDivElement | null = null
 
+export interface ResultsCallbacks {
+  onRestart(): void
+  onHome(): void
+  onQuiz?(): void
+}
+
 export function showResults(
   state: GameState,
-  callbacks: { onRestart(): void; onHome(): void },
+  callbacks: ResultsCallbacks,
+  quizBonus?: number,
 ): void {
   hideResults()
 
@@ -46,6 +53,14 @@ export function showResults(
   overlay.appendChild(starsRow)
   overlay.appendChild(scoreEl)
 
+  // Quiz bonus line (shown after quiz is completed)
+  if (quizBonus !== undefined && quizBonus > 0) {
+    const bonusEl = document.createElement('div')
+    bonusEl.className = 'results-quiz-bonus'
+    bonusEl.textContent = `${t('quiz.bonus')}: +${quizBonus}`
+    overlay.appendChild(bonusEl)
+  }
+
   if (state.newRewards.length > 0) {
     const banner = document.createElement('div')
     banner.className = 'results-reward'
@@ -75,6 +90,18 @@ export function showResults(
 
   const buttons = document.createElement('div')
   buttons.className = 'results-buttons'
+
+  // Quiz button — only when finished, quiz exists, and not yet taken this run
+  if (finished && callbacks.onQuiz) {
+    const quizBtn = document.createElement('button')
+    quizBtn.className = 'results-btn results-btn--quiz'
+    quizBtn.textContent = t('quiz.start')
+    quizBtn.addEventListener('click', () => {
+      hideResults()
+      callbacks.onQuiz!()
+    })
+    buttons.appendChild(quizBtn)
+  }
 
   const restartBtn = document.createElement('button')
   restartBtn.className = 'results-btn results-btn--restart'

@@ -485,3 +485,82 @@
   width: 64px;
   flex-shrink: 0;
 }
+
+/* ── Album screen ─────────────────────────────────────────── */
+
+.album-subtitle {
+  font-size: 0.95rem;
+  color: #ddd;
+  text-align: center;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.album-section {
+  width: 100%;
+  max-width: 420px;
+}
+
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+@media (max-width: 360px) {
+  .album-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.album-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: #2a1200;
+  border: 2px solid #444;
+  border-radius: 14px;
+  padding: 14px 8px 12px;
+  text-align: center;
+  min-height: 120px;
+}
+
+.album-tile--unlocked {
+  border-color: #f7c325;
+}
+
+.album-tile--locked {
+  opacity: 0.6;
+}
+
+.album-tile-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.album-tile--locked .album-tile-icon {
+  font-size: 2rem;
+  color: #555;
+}
+
+.album-tile-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #f7c325;
+  line-height: 1.2;
+}
+
+.album-tile--locked .album-tile-name {
+  color: #888;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.album-tile-fact {
+  font-size: 0.68rem;
+  color: #ccc;
+  line-height: 1.4;
+  margin: 0;
+}

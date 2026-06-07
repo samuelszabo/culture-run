@@ -13,4 +13,4 @@ Behačka pre prehliadač (počítač aj mobil), v ktorej hráč spoznáva krajin
 
 ## Stav
 
-📝 Fáza návrhu — dokumentácia hotová, vývoj ešte nezačal.
+🚀 Hra je živá na **https://culture-run.pages.dev/** (Cloudflare Pages). Fázy 1–6 hotové, prebieha fáza 7 (edukácia).

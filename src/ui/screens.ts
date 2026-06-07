@@ -1,13 +1,14 @@
 import './screens.css'
 import { SaveData, Character, RewardId } from '../game/types'
 import { REWARDS } from '../game/rewards'
+import { ALBUM_ENTRIES } from '../game/album'
 import { t } from '../i18n/strings'
 
 export interface ScreensCallbacks {
   onStartGame(): void
 }
 
-type Screen = 'home' | 'character' | 'country' | 'area' | 'wardrobe'
+type Screen = 'home' | 'character' | 'country' | 'area' | 'wardrobe' | 'album'
 
 let ui: HTMLElement
 let save: SaveData
@@ -49,6 +50,7 @@ function renderScreen(screen: Screen): void {
     case 'country': renderCountry(); break
     case 'area': renderArea(); break
     case 'wardrobe': renderWardrobe(); break
+    case 'album': renderAlbum(); break
   }
 }
 
@@ -74,6 +76,10 @@ function renderHome(): void {
   const wardrobeBtn = button('btn btn-secondary', t('menu.wardrobe'))
   wardrobeBtn.addEventListener('click', () => renderScreen('wardrobe'))
   actions.appendChild(wardrobeBtn)
+
+  const albumBtn = button('btn btn-secondary', t('menu.album'))
+  albumBtn.addEventListener('click', () => renderScreen('album'))
+  actions.appendChild(albumBtn)
 
   wrap.appendChild(actions)
   ui.appendChild(wrap)
@@ -329,6 +335,65 @@ function renderWardrobe(): void {
   wrap.appendChild(backBtn)
 
   ui.appendChild(wrap)
+}
+
+function renderAlbum(): void {
+  const wrap = div('screen screen-album')
+
+  const title = el('h2', 'screen-title')
+  title.textContent = t('album.title')
+  wrap.appendChild(title)
+
+  const subtitle = el('p', 'album-subtitle')
+  subtitle.textContent = t('album.subtitle')
+  wrap.appendChild(subtitle)
+
+  const foods = ALBUM_ENTRIES.filter(e => e.category === 'food')
+  const landmarks = ALBUM_ENTRIES.filter(e => e.category === 'landmark')
+
+  const foodSection = div('album-section')
+  const foodGrid = div('album-grid')
+  for (const entry of foods) {
+    const unlocked = save.album.foods.includes(entry.id)
+    foodGrid.appendChild(albumTile(entry.icon, t(entry.nameKey), t(entry.factKey), unlocked))
+  }
+  foodSection.appendChild(foodGrid)
+  wrap.appendChild(foodSection)
+
+  const landmarkSection = div('album-section')
+  const landmarkGrid = div('album-grid')
+  for (const entry of landmarks) {
+    const unlocked = save.album.landmarks.includes(entry.id)
+    landmarkGrid.appendChild(albumTile(entry.icon, t(entry.nameKey), t(entry.factKey), unlocked))
+  }
+  landmarkSection.appendChild(landmarkGrid)
+  wrap.appendChild(landmarkSection)
+
+  const backBtn = button('btn btn-back', t('common.back'))
+  backBtn.addEventListener('click', () => renderScreen('home'))
+  wrap.appendChild(backBtn)
+
+  ui.appendChild(wrap)
+}
+
+function albumTile(icon: string, name: string, fact: string, unlocked: boolean): HTMLDivElement {
+  const tile = div(`album-tile${unlocked ? ' album-tile--unlocked' : ' album-tile--locked'}`)
+
+  const iconEl = el('span', 'album-tile-icon')
+  iconEl.textContent = unlocked ? icon : '?'
+  tile.appendChild(iconEl)
+
+  const nameEl = el('span', 'album-tile-name')
+  nameEl.textContent = unlocked ? name : t('album.locked.hint')
+  tile.appendChild(nameEl)
+
+  if (unlocked) {
+    const factEl = el('p', 'album-tile-fact')
+    factEl.textContent = fact
+    tile.appendChild(factEl)
+  }
+
+  return tile
 }
 
 function div(className: string): HTMLDivElement {
