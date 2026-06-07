@@ -7,7 +7,7 @@ export interface Reward {
 }
 
 export const REWARDS: Reward[] = [
-  { id: 'sparkly-tail', nameKey: 'reward.sparkly-tail', levelId: 'china-bridge' },
+  { id: 'dragon-tail', nameKey: 'reward.dragon-tail', levelId: 'china-bridge' },
   { id: 'labubu', nameKey: 'reward.labubu', levelId: null },
 ]
 

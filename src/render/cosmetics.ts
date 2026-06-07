@@ -7,8 +7,8 @@ export function drawCosmetics(ctx: CanvasRenderingContext2D, state: GameState): 
 
   const box = playerBox(state.player)
 
-  if (state.equipped.includes('sparkly-tail')) {
-    drawSparklyTail(ctx, box, state.elapsed, state.distance)
+  if (state.equipped.includes('dragon-tail')) {
+    drawDragonTail(ctx, box, state.elapsed, state.distance)
   }
 
   if (state.equipped.includes('labubu')) {
@@ -16,40 +16,44 @@ export function drawCosmetics(ctx: CanvasRenderingContext2D, state: GameState): 
   }
 }
 
-function drawSparklyTail(
+function drawDragonTail(
   ctx: CanvasRenderingContext2D,
   box: { x: number; y: number; w: number; h: number },
   elapsed: number,
   distance: number,
 ): void {
-  const particleCount = 13
-  const tailLength = 70
+  const segments = 9
+  const segmentGap = 9
   const centerX = box.x + box.w / 2
-  const tailStartY = box.y + box.h
+  const startY = box.y + box.h + 6
 
-  const colors = ['#f5c518', '#ff69b4', '#40e0d0']
+  for (let i = segments - 1; i >= 0; i--) {
+    const t = i / (segments - 1)
+    const wave = Math.sin(elapsed * 4 + distance * 0.02 + i * 0.7) * (3 + i * 1.2)
+    const x = centerX + wave
+    const y = startY + i * segmentGap
+    const size = Math.round(16 - t * 9)
 
-  for (let i = 0; i < particleCount; i++) {
-    const t = i / (particleCount - 1)
-    const py = tailStartY + t * tailLength
+    ctx.fillStyle = i % 2 === 0 ? '#e8192c' : '#f7c325'
+    ctx.fillRect(Math.round(x - size / 2), Math.round(y - size / 2), size, size)
 
-    const wave = Math.sin(elapsed * 3 + distance * 0.02 + i * 0.9) * (4 + i * 0.4)
-    const px = centerX + wave
-
-    const size = Math.max(1, Math.round(4 - t * 3))
-    const twinkle = 0.5 + 0.5 * Math.cos(elapsed * 6 + distance * 0.03 + i * 1.3)
-    const alpha = twinkle * (1 - t * 0.6)
-
-    const colorIndex = (i + Math.floor(elapsed * 2 + distance * 0.01)) % colors.length
-    const color = colors[colorIndex]
-
-    const r = parseInt(color.slice(1, 3), 16)
-    const g = parseInt(color.slice(3, 5), 16)
-    const b = parseInt(color.slice(5, 7), 16)
-
-    ctx.fillStyle = `rgba(${r},${g},${b},${alpha.toFixed(2)})`
-    ctx.fillRect(Math.round(px - size / 2), Math.round(py - size / 2), size, size)
+    if (i > 0 && i % 2 === 0) {
+      ctx.fillStyle = '#2ecc71'
+      ctx.fillRect(Math.round(x - 2), Math.round(y - size / 2 - 4), 4, 4)
+    }
   }
+
+  const headWave = Math.sin(elapsed * 4 + distance * 0.02) * 3
+  const headX = centerX + headWave
+  const headY = startY
+
+  ctx.fillStyle = '#f7c325'
+  ctx.fillRect(Math.round(headX - 9), headY - 12, 3, 7)
+  ctx.fillRect(Math.round(headX + 6), headY - 12, 3, 7)
+
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(Math.round(headX - 5), headY - 4, 3, 3)
+  ctx.fillRect(Math.round(headX + 2), headY - 4, 3, 3)
 }
 
 function drawLabubu(

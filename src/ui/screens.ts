@@ -15,7 +15,7 @@ let persist: () => void
 let callbacks: ScreensCallbacks
 
 const REWARD_ICONS: Record<RewardId, string> = {
-  'sparkly-tail': '✨',
+  'dragon-tail': '🐉',
   'labubu': '👾',
 }
 

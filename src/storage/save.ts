@@ -20,10 +20,18 @@ export function loadSave(): SaveData {
     if (raw === null) return defaultSave()
     const parsed = JSON.parse(raw) as SaveData
     if (parsed.version !== 1) return defaultSave()
-    return parsed
+    return migrateRewardIds(parsed)
   } catch {
     return defaultSave()
   }
+}
+
+function migrateRewardIds(save: SaveData): SaveData {
+  const rename = (ids: RewardId[]) =>
+    ids.map((id) => ((id as string) === 'sparkly-tail' ? 'dragon-tail' : id))
+  save.unlockedRewards = rename(save.unlockedRewards)
+  save.equippedRewards = rename(save.equippedRewards)
+  return save
 }
 
 export function persistSave(save: SaveData): void {
