@@ -2,7 +2,7 @@
 
 ## Koncept
 
-**Culture Run** je behačka (runner) pre prehliadač, v ktorej hráč spoznáva krajiny sveta. Vyberie si krajinu podľa vlajky, potom zaujímavú oblasť z tejto krajiny (napr. čínsky most) a postavička beží smerom hore cez túto oblasť — vyhýba sa prekážkam a zbiera miestne jedlo a vodu. Na konci levelu dostane hodnotenie 1–5 hviezdičiek. Za 5 hviezdičiek získa odmenu — kozmetické vylepšenie postavičky.
+**Culture Run** je behačka (runner) pre prehliadač, v ktorej hráč spoznáva krajiny sveta. Vyberie si krajinu podľa vlajky, potom zaujímavú oblasť z tejto krajiny (napr. Veľký čínsky múr) a postavička beží smerom hore cez túto oblasť — vyhýba sa prekážkam a zbiera miestne jedlo a vodu. Na konci levelu dostane hodnotenie 1–5 hviezdičiek. Za 5 hviezdičiek získa odmenu — kozmetické vylepšenie postavičky.
 
 - **Cieľová skupina:** deti 8–12 rokov
 - **Platforma:** prehliadač — počítač aj mobil, bez backendu

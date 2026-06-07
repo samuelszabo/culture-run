@@ -31,6 +31,10 @@ function migrateRewardIds(save: SaveData): SaveData {
     ids.map((id) => ((id as string) === 'sparkly-tail' ? 'dragon-tail' : id))
   save.unlockedRewards = rename(save.unlockedRewards)
   save.equippedRewards = rename(save.equippedRewards)
+  if (save.bestScores['china-bridge'] && !save.bestScores['china-wall']) {
+    save.bestScores['china-wall'] = save.bestScores['china-bridge']
+    delete save.bestScores['china-bridge']
+  }
   return save
 }
 

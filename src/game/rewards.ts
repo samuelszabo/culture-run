@@ -13,7 +13,7 @@ export const REWARDS: Reward[] = [
     id: 'dragon-tail',
     nameKey: 'reward.dragon-tail',
     hintKey: 'reward.dragon-tail.hint',
-    levelId: 'china-bridge',
+    levelId: 'china-wall',
   },
   {
     id: 'labubu',

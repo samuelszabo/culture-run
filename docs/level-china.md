@@ -46,5 +46,5 @@ Predmety sú rozmiestnené v líniách a oblúkoch, ktoré vedú hráča bezpeč
 
 ## Vzdelávací prvok
 
-- Pred štartom levelu krátka kartička: vlajka Číny + 1–2 vety o mieste („Čínske oblúkové mosty sa stavajú už viac ako 1500 rokov...")
+- Pred štartom levelu krátka kartička: vlajka Číny + 1–2 vety o mieste („Veľký čínsky múr sa staval viac ako 2 000 rokov...")
 - Na vyhodnocovacej obrazovke zaujímavosť o jedle, ktoré hráč zbieral

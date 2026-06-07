@@ -8,7 +8,7 @@ export interface Level {
   collectibles: Collectible[]
 }
 
-export function createChinaBridgeLevel(): Level {
+export function createChinaWallLevel(): Level {
   const staticObstacles = createBridgeObstacles()
   return {
     obstacles: [...staticObstacles, ...createMovers(staticObstacles)],

@@ -69,7 +69,7 @@ export function showResults(
   } else if (finished) {
     const fact = document.createElement('div')
     fact.className = 'results-fact'
-    fact.textContent = t('results.fact.china-bridge')
+    fact.textContent = t('results.fact.china-wall')
     overlay.appendChild(fact)
   }
 

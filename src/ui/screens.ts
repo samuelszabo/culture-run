@@ -214,11 +214,11 @@ function renderArea(): void {
   const card = div('area-card')
 
   const areaName = el('h3', 'area-name')
-  areaName.textContent = t('area.china-bridge')
+  areaName.textContent = t('area.china-wall')
   card.appendChild(areaName)
 
   const info = el('p', 'area-info')
-  info.textContent = t('area.china-bridge.info')
+  info.textContent = t('area.china-wall.info')
   card.appendChild(info)
 
   const playBtn = button('btn btn-primary', t('menu.play'))

@@ -16,7 +16,7 @@ import {
 } from './game/types'
 import { attachKeyboard } from './input/keyboard'
 import { attachTouch } from './input/touch'
-import { createChinaBridgeLevel } from './levels/china-bridge'
+import { createChinaWallLevel } from './levels/china-wall'
 import { EntityPool, createEntities, disposeEntities, updateEntities } from './render3d/entities'
 import { Player3D, createPlayer3D, disposePlayer3D, updatePlayer3D } from './render3d/player3d'
 import { createStage, renderStage, updateStage } from './render3d/scene'
@@ -26,7 +26,7 @@ import { hideHud, initHud, showHud, updateHud } from './ui/hud-dom'
 import { hideResults, showResults } from './ui/results-dom'
 import { hideScreens, initScreens, showHome } from './ui/screens'
 
-const LEVEL_ID = 'china-bridge'
+const LEVEL_ID = 'china-wall'
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
 const stage = createStage(canvas)
@@ -39,7 +39,7 @@ let player3d: Player3D | null = null
 let resultsShown = false
 
 function newGame(): GameState {
-  const level = createChinaBridgeLevel()
+  const level = createChinaWallLevel()
   return createGameState(level.obstacles, level.collectibles, save.character ?? 'boy', [
     ...save.equippedRewards,
   ])

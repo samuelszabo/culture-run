@@ -14,11 +14,11 @@ export function showPreLevelCard(onStart: () => void): void {
 
   const title = document.createElement('h2')
   title.className = 'card-title'
-  title.textContent = t('card.china-bridge.title')
+  title.textContent = t('card.china-wall.title')
 
   const fact = document.createElement('p')
   fact.className = 'card-fact'
-  fact.textContent = t('card.china-bridge.fact')
+  fact.textContent = t('card.china-wall.fact')
 
   const startBtn = document.createElement('button')
   startBtn.className = 'card-start-btn'
