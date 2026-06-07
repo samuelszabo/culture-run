@@ -34,6 +34,9 @@ export interface Player3D {
   catNose: THREE.Mesh | null
   catTailSegments: THREE.Mesh[]
   catLegs: THREE.Group[]
+  catPetGroup: THREE.Group | null
+  catPetLegs: THREE.Group[]
+  catPetTailSegments: THREE.Mesh[]
   scene: THREE.Scene
 }
 
@@ -103,6 +106,86 @@ function makeCatLegGroup(x: number, z: number): THREE.Group {
   const g = makeLimbGroup(legMesh, CAT_LEG_H, CAT_BODY_Y)
   g.position.set(x, 0, z)
   return g
+}
+
+const PET_GRAY = 0x8a8a8a
+const PET_WHITE = 0xffffff
+const PET_PINK = 0xf4a0b0
+
+function buildCatPet(): { petGroup: THREE.Group; petLegs: THREE.Group[]; petTailSegments: THREE.Mesh[] } {
+  const petGroup = new THREE.Group()
+
+  const headMesh = box(CAT_HEAD_S, CAT_HEAD_S, CAT_HEAD_S, PET_GRAY)
+  headMesh.position.set(0, CAT_HEAD_Y, CAT_HEAD_Z)
+  petGroup.add(headMesh)
+
+  const torsoMesh = box(CAT_BODY_W, CAT_BODY_H, CAT_BODY_L, PET_GRAY)
+  torsoMesh.position.set(0, CAT_BODY_Y, CAT_BODY_Z)
+  petGroup.add(torsoMesh)
+
+  const earW = H * 0.09
+  const earH = H * 0.11
+  const earTopY = CAT_HEAD_Y + CAT_HEAD_S / 2 + earH / 2
+
+  const earL = box(earW, earH, earW * 0.5, PET_GRAY)
+  earL.position.set(-(CAT_HEAD_S * 0.28), earTopY, CAT_HEAD_Z)
+  petGroup.add(earL)
+
+  const earR = box(earW, earH, earW * 0.5, PET_GRAY)
+  earR.position.set(CAT_HEAD_S * 0.28, earTopY, CAT_HEAD_Z)
+  petGroup.add(earR)
+
+  const earInnerW = earW * 0.55
+  const earInnerH = earH * 0.65
+  const earInnerL = box(earInnerW, earInnerH, earW * 0.3, PET_PINK)
+  earInnerL.position.set(-(CAT_HEAD_S * 0.28), earTopY + earH * 0.04, CAT_HEAD_Z - earW * 0.25)
+  petGroup.add(earInnerL)
+
+  const earInnerR = box(earInnerW, earInnerH, earW * 0.3, PET_PINK)
+  earInnerR.position.set(CAT_HEAD_S * 0.28, earTopY + earH * 0.04, CAT_HEAD_Z - earW * 0.25)
+  petGroup.add(earInnerR)
+
+  const snoutW = CAT_HEAD_S * 0.55
+  const snoutH = CAT_HEAD_S * 0.28
+  const snout = box(snoutW, snoutH, H * 0.06, PET_WHITE)
+  snout.position.set(0, CAT_HEAD_Y - CAT_HEAD_S * 0.1, CAT_HEAD_Z - CAT_HEAD_S / 2 - H * 0.02)
+  petGroup.add(snout)
+
+  const nose = box(H * 0.06, H * 0.04, H * 0.04, PET_PINK)
+  nose.position.set(0, CAT_HEAD_Y + CAT_HEAD_S * 0.08, CAT_HEAD_Z - CAT_HEAD_S / 2 - H * 0.03)
+  petGroup.add(nose)
+
+  const petLegs: THREE.Group[] = []
+  const halfX = CAT_BODY_W / 2 + CAT_LEG_W * 0.1
+  const legPositions = [
+    [-halfX, CAT_FRONT_LEG_Z],
+    [ halfX, CAT_FRONT_LEG_Z],
+    [-halfX, CAT_REAR_LEG_Z],
+    [ halfX, CAT_REAR_LEG_Z],
+  ] as const
+  for (const [lx, lz] of legPositions) {
+    const legMesh = box(CAT_LEG_W, CAT_LEG_H, CAT_LEG_W, PET_GRAY)
+    const lg = makeLimbGroup(legMesh, CAT_LEG_H, CAT_BODY_Y)
+    lg.position.set(lx, 0, lz)
+    petGroup.add(lg)
+    petLegs.push(lg)
+  }
+
+  const petTailSegments: THREE.Mesh[] = []
+  const tailSegCount = 4
+  const tailSegSize0 = H * 0.11
+  for (let i = 0; i < tailSegCount; i++) {
+    const t = i / (tailSegCount - 1)
+    const size = tailSegSize0 * (1 - t * 0.4)
+    const color = i === tailSegCount - 1 ? PET_WHITE : PET_GRAY
+    const tailSeg = box(size, size, size, color)
+    petGroup.add(tailSeg)
+    petTailSegments.push(tailSeg)
+  }
+
+  petGroup.scale.setScalar(0.5)
+
+  return { petGroup, petLegs, petTailSegments }
 }
 
 export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
@@ -386,6 +469,20 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     dragonEyeR.position.set(headSegSize * 0.18, headSegSize * 0.1, headSegSize / 2)
   }
 
+  // --- Cat-pet cosmetic ---
+  let catPetGroup: THREE.Group | null = null
+  let catPetLegs: THREE.Group[] = []
+  let catPetTailSegments: THREE.Mesh[] = []
+
+  if (state.equipped.includes('cat-pet')) {
+    const built = buildCatPet()
+    catPetGroup = built.petGroup
+    catPetLegs = built.petLegs
+    catPetTailSegments = built.petTailSegments
+    catPetGroup.position.set(-0.45, 0, 1.25)
+    group.add(catPetGroup)
+  }
+
   const pos = playerWorldPosition(state.player.x, state.distance)
   group.position.set(pos.x, 0, pos.z)
 
@@ -423,6 +520,9 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     catNose,
     catTailSegments,
     catLegs,
+    catPetGroup,
+    catPetLegs,
+    catPetTailSegments,
     scene,
   }
 }
@@ -509,6 +609,43 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
       const waveX = Math.sin(elapsed * 4 + i * 0.7) * (0.06 + i * 0.025)
       const segZ = (i + 1) * segGap
       seg.position.set(waveX, dragonY, segZ)
+    }
+  }
+
+  // Cat-pet cosmetic animation
+  if (p.catPetGroup) {
+    const petGroup = p.catPetGroup
+
+    petGroup.position.x = -0.45 + Math.sin(elapsed * 2) * 0.08
+    petGroup.position.z = 1.25
+
+    for (const lg of p.catPetLegs) lg.rotation.x = 0
+
+    if (phase === 'running') {
+      const petSwing = Math.sin(distance * 0.05)
+      const amp = 0.45
+      p.catPetLegs[0].rotation.x = -petSwing * amp
+      p.catPetLegs[1].rotation.x =  petSwing * amp
+      p.catPetLegs[2].rotation.x =  petSwing * amp
+      p.catPetLegs[3].rotation.x = -petSwing * amp
+    } else if (phase === 'finished') {
+      petGroup.position.y = Math.abs(Math.sin(elapsed * 5)) * 0.2
+    } else {
+      petGroup.position.y = 0
+    }
+
+    const tailSegCount = p.catPetTailSegments.length
+    const tailRearZ = CAT_BODY_Z + CAT_BODY_L / 2
+    const tailStepZ = H * 0.10
+    const tailStepY = H * 0.13
+
+    for (let i = 0; i < tailSegCount; i++) {
+      const seg = p.catPetTailSegments[i]
+      const t = (i + 1) / tailSegCount
+      const wave = Math.sin(elapsed * 3.5 + i * 0.9) * 0.05
+      const segY = CAT_BODY_Y + t * tailStepY * tailSegCount
+      const segZ = tailRearZ + t * tailStepZ * tailSegCount
+      seg.position.set(wave, segY, segZ)
     }
   }
 }
