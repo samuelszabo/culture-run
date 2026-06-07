@@ -25,6 +25,8 @@ claude: claude-build
 	docker run -it --rm \
 		-v $(PWD):/workspace \
 		-v $(AUTH_DIR):/home/node/.claude \
+		-v $(HOME)/.ssh:/home/node/.ssh:ro \
+		-v $(HOME)/.gitconfig:/home/node/.gitconfig:ro \
 		$(IMAGE) \
 		claude --dangerously-skip-permissions --model opus \
 		"$(SEED_PROMPT)"
