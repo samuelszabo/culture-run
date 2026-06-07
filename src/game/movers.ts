@@ -1,4 +1,4 @@
-import { GameState, Obstacle, ROAD_LEFT, ROAD_RIGHT, TRACK_LENGTH } from './types'
+import { GameState, Obstacle, ObstacleKind, ROAD_LEFT, ROAD_RIGHT, TRACK_LENGTH } from './types'
 
 const FIRECRACKER_REST = 2.2
 const FIRECRACKER_WARNING = 1.0
@@ -37,7 +37,7 @@ export function createMovers(staticObstacles: Obstacle[]): Obstacle[] {
   const staticYSet = new Set(staticObstacles.map((o) => o.trackY))
   const sortedStaticY = Array.from(staticYSet).sort((a, b) => a - b)
 
-  const MIN_CLEARANCE = 220
+  const MIN_CLEARANCE = 170
 
   const eligibleSlots: number[] = []
 
@@ -73,73 +73,39 @@ export function createMovers(staticObstacles: Obstacle[]): Obstacle[] {
   }
 
   const sortedSelected = Array.from(selectedIndices).sort((a, b) => a - b)
+  const KIND_CYCLE: ObstacleKind[] = ['walker', 'firecracker', 'walker', 'carrier', 'firecracker']
 
-  const walkerSlots = sortedSelected.slice(0, TARGET_WALKERS)
-  const carrierSlots = sortedSelected.slice(TARGET_WALKERS, TARGET_WALKERS + TARGET_CARRIERS)
-  const firecrackerSlots = sortedSelected.slice(TARGET_WALKERS + TARGET_CARRIERS)
-
-  for (const idx of walkerSlots) {
+  sortedSelected.forEach((idx, i) => {
     const trackY = eligibleSlots[idx]
-    const w = 30
-    const minX = ROAD_LEFT + w / 2
-    const maxX = ROAD_RIGHT - w / 2
-    const x = minX + rand() * (maxX - minX)
-    const speed = 50 + rand() * 40
-    const vx = rand() < 0.5 ? speed : -speed
-    movers.push({
-      kind: 'walker',
-      x,
-      trackY,
-      w,
-      h: 40,
-      vx,
-      minX,
-      maxX,
-      harmless: false,
-      warning: false,
-    })
-  }
+    const kind = KIND_CYCLE[i % KIND_CYCLE.length]
 
-  for (const idx of carrierSlots) {
-    const trackY = eligibleSlots[idx]
-    const w = 46
-    const minX = ROAD_LEFT + w / 2
-    const maxX = ROAD_RIGHT - w / 2
-    const x = minX + rand() * (maxX - minX)
-    const speed = 90 + rand() * 40
-    const vx = rand() < 0.5 ? speed : -speed
-    movers.push({
-      kind: 'carrier',
-      x,
-      trackY,
-      w,
-      h: 44,
-      vx,
-      minX,
-      maxX,
-      harmless: false,
-      warning: false,
-    })
-  }
-
-  for (const idx of firecrackerSlots) {
-    const trackY = eligibleSlots[idx]
-    const cx = ROAD_LEFT + 30 + rand() * (ROAD_RIGHT - ROAD_LEFT - 60)
-    const timer = rand() * FIRECRACKER_CYCLE
-    const fc: Obstacle = {
-      kind: 'firecracker',
-      x: cx,
-      trackY,
-      w: 36,
-      h: 36,
-      vx: 0,
-      timer,
-      harmless: true,
-      warning: false,
+    if (kind === 'firecracker') {
+      const cx = ROAD_LEFT + 30 + rand() * (ROAD_RIGHT - ROAD_LEFT - 60)
+      const fc: Obstacle = {
+        kind,
+        x: cx,
+        trackY,
+        w: 36,
+        h: 36,
+        vx: 0,
+        timer: rand() * FIRECRACKER_CYCLE,
+        harmless: true,
+        warning: false,
+      }
+      applyFirecrackerPhase(fc)
+      movers.push(fc)
+      return
     }
-    applyFirecrackerPhase(fc)
-    movers.push(fc)
-  }
+
+    const w = kind === 'walker' ? 30 : 46
+    const h = kind === 'walker' ? 40 : 44
+    const minX = ROAD_LEFT + w / 2
+    const maxX = ROAD_RIGHT - w / 2
+    const x = minX + rand() * (maxX - minX)
+    const speed = kind === 'walker' ? 50 + rand() * 40 : 90 + rand() * 40
+    const vx = rand() < 0.5 ? speed : -speed
+    movers.push({ kind, x, trackY, w, h, vx, minX, maxX, harmless: false, warning: false })
+  })
 
   return movers
 }
