@@ -1,4 +1,5 @@
 import {
+  DEATH_PAUSE_SECONDS,
   GAME_HEIGHT,
   GAME_WIDTH,
   GameState,
@@ -7,6 +8,7 @@ import {
   obstacleBox,
   playerBox,
 } from '../game/types'
+import { drawBackground } from './background'
 
 export interface Renderer {
   canvas: HTMLCanvasElement
@@ -67,7 +69,7 @@ const OBSTACLE_COLORS: Record<string, string> = {
 }
 
 export function drawWorld(ctx: CanvasRenderingContext2D, state: GameState): void {
-  drawRoad(ctx, state.distance)
+  drawBackground(ctx, state)
   drawFinishLine(ctx, state.distance)
   drawObstacles(ctx, state)
 }
@@ -81,25 +83,6 @@ function drawFinishLine(ctx: CanvasRenderingContext2D, distance: number): void {
     ctx.fillRect(60 + i * tile, y - 20, Math.min(tile, GAME_WIDTH - 120 - i * tile), 10)
     ctx.fillStyle = i % 2 === 0 ? '#222222' : '#ffffff'
     ctx.fillRect(60 + i * tile, y - 10, Math.min(tile, GAME_WIDTH - 120 - i * tile), 10)
-  }
-}
-
-function drawRoad(ctx: CanvasRenderingContext2D, distance: number): void {
-  ctx.fillStyle = '#2c5f2d'
-  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
-
-  ctx.fillStyle = '#b8a88a'
-  ctx.fillRect(50, 0, GAME_WIDTH - 100, GAME_HEIGHT)
-
-  ctx.fillStyle = '#8d7b5e'
-  ctx.fillRect(50, 0, 10, GAME_HEIGHT)
-  ctx.fillRect(GAME_WIDTH - 60, 0, 10, GAME_HEIGHT)
-
-  ctx.fillStyle = '#a89878'
-  const tileHeight = 80
-  const scroll = distance % tileHeight
-  for (let y = -tileHeight + scroll; y < GAME_HEIGHT; y += tileHeight) {
-    ctx.fillRect(60, y, GAME_WIDTH - 120, 3)
   }
 }
 
@@ -122,6 +105,19 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, state: GameState): voi
 
   const box = playerBox(player)
   const girl = state.character === 'girl'
+
+  ctx.save()
+  if (state.phase === 'dying') {
+    const progress = 1 - state.deathPauseFor / DEATH_PAUSE_SECONDS
+    const angle = Math.min(1, progress * 2) * (Math.PI / 2)
+    const pivotX = box.x + box.w / 2
+    const pivotY = box.y + box.h
+    ctx.translate(pivotX, pivotY)
+    ctx.rotate(angle)
+    ctx.translate(-pivotX, -pivotY)
+  } else if (state.phase === 'finished') {
+    ctx.translate(0, -Math.abs(Math.sin(state.elapsed * 6)) * 14)
+  }
 
   ctx.fillStyle = '#f4c542'
   ctx.fillRect(box.x, box.y, box.w, box.h * 0.4)
@@ -147,4 +143,6 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, state: GameState): voi
     ctx.fillRect(box.x + box.w * 0.1, legY, legWidth, legH)
     ctx.fillRect(box.x + box.w * 0.6, legY, legWidth, legH)
   }
+
+  ctx.restore()
 }

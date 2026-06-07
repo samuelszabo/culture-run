@@ -19,8 +19,10 @@ import { createChinaBridgeLevel } from './levels/china-bridge'
 import { drawCollectibles } from './render/collectibles'
 import { drawCosmetics } from './render/cosmetics'
 import { drawMovers } from './render/movers'
+import { drawParticles, resetParticles, updateParticles } from './render/particles'
 import { createRenderer, drawPlayer, drawWorld } from './render/renderer'
 import { loadSave, persistSave, recordLevelResult } from './storage/save'
+import { showPreLevelCard } from './ui/cards'
 import { drawHud } from './ui/hud'
 import { RESULTS_HOME_RECT, RESULTS_RESTART_RECT, drawResults } from './ui/results'
 import { hideScreens, initScreens, showHome } from './ui/screens'
@@ -43,6 +45,7 @@ function newGame(): GameState {
 
 function startGame(): void {
   hideScreens()
+  resetParticles()
   state = newGame()
   input.touchTargetX = null
 }
@@ -52,7 +55,9 @@ function goHome(): void {
   showHome()
 }
 
-initScreens(save, () => persistSave(save), { onStartGame: startGame })
+initScreens(save, () => persistSave(save), {
+  onStartGame: () => showPreLevelCard(startGame),
+})
 attachKeyboard(input)
 attachTouch(canvas, input, renderer.screenToGameX)
 showHome()
@@ -86,10 +91,7 @@ function update(dt: number): void {
 
   if (state.phase === 'dying') {
     updateDying(state, dt)
-    return
-  }
-
-  if (state.phase === 'running') {
+  } else if (state.phase === 'running') {
     state.speed = BASE_SPEED * (1 + 0.3 * Math.min(1, state.distance / TRACK_LENGTH))
     state.distance += state.speed * dt
     updateMovers(state, dt)
@@ -99,10 +101,7 @@ function update(dt: number): void {
     if (findCollision(state)) {
       killPlayer(state)
       applyDeathPenalty(state)
-      return
-    }
-
-    if (state.distance >= TRACK_LENGTH) {
+    } else if (state.distance >= TRACK_LENGTH) {
       state.phase = 'finished'
     }
   }
@@ -112,6 +111,8 @@ function update(dt: number): void {
     const stars = computeStars(state.score, state.maxScore, state.phase === 'finished')
     state.newRewards = recordLevelResult(save, LEVEL_ID, state.score, stars)
   }
+
+  updateParticles(state, dt)
 }
 
 function render(): void {
@@ -122,6 +123,7 @@ function render(): void {
     drawMovers(renderer.ctx, state)
     drawPlayer(renderer.ctx, state)
     drawCosmetics(renderer.ctx, state)
+    drawParticles(renderer.ctx)
     drawHud(renderer.ctx, state)
     drawResults(renderer.ctx, state)
   }
