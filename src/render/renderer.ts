@@ -12,6 +12,7 @@ export interface Renderer {
   canvas: HTMLCanvasElement
   ctx: CanvasRenderingContext2D
   screenToGameX(clientX: number): number
+  screenToGameY(clientY: number): number
   beginFrame(): void
   endFrame(): void
 }
@@ -49,6 +50,9 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     ctx,
     screenToGameX(clientX: number): number {
       return (clientX - offsetX) / scale
+    },
+    screenToGameY(clientY: number): number {
+      return (clientY - offsetY) / scale
     },
     beginFrame(): void {
       ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
@@ -117,11 +121,18 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, state: GameState): voi
   if (blinking) return
 
   const box = playerBox(player)
+  const girl = state.character === 'girl'
 
   ctx.fillStyle = '#f4c542'
   ctx.fillRect(box.x, box.y, box.w, box.h * 0.4)
 
-  ctx.fillStyle = '#3498db'
+  if (girl) {
+    ctx.fillStyle = '#8d5524'
+    ctx.fillRect(box.x - 6, box.y + 2, 6, box.h * 0.3)
+    ctx.fillRect(box.x + box.w, box.y + 2, 6, box.h * 0.3)
+  }
+
+  ctx.fillStyle = girl ? '#e75480' : '#3498db'
   ctx.fillRect(box.x, box.y + box.h * 0.4, box.w, box.h * 0.35)
 
   ctx.fillStyle = '#2c3e50'
