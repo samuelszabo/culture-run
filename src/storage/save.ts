@@ -1,5 +1,5 @@
 import { SaveData, RewardId } from '../game/types'
-import { rewardForLevel } from '../game/rewards'
+import { REWARDS } from '../game/rewards'
 
 const STORAGE_KEY = 'cultureRun.save'
 
@@ -46,9 +46,11 @@ export function recordLevelResult(save: SaveData, levelId: string, score: number
 
   const newlyUnlocked: RewardId[] = []
 
-  if (stars === 5) {
-    const reward = rewardForLevel(levelId)
-    if (reward && !save.unlockedRewards.includes(reward.id)) {
+  for (const reward of REWARDS) {
+    if (save.unlockedRewards.includes(reward.id)) continue
+    const earnedByLevel = reward.levelId === levelId && stars === 5
+    const earnedByScore = reward.scoreThreshold !== undefined && score >= reward.scoreThreshold
+    if (earnedByLevel || earnedByScore) {
       save.unlockedRewards.push(reward.id)
       save.equippedRewards.push(reward.id)
       newlyUnlocked.push(reward.id)

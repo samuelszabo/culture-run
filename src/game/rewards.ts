@@ -3,14 +3,22 @@ import { RewardId } from './types'
 export interface Reward {
   id: RewardId
   nameKey: string
-  levelId: string | null
+  hintKey: string
+  levelId?: string
+  scoreThreshold?: number
 }
 
 export const REWARDS: Reward[] = [
-  { id: 'dragon-tail', nameKey: 'reward.dragon-tail', levelId: 'china-bridge' },
-  { id: 'labubu', nameKey: 'reward.labubu', levelId: null },
+  {
+    id: 'dragon-tail',
+    nameKey: 'reward.dragon-tail',
+    hintKey: 'reward.dragon-tail.hint',
+    levelId: 'china-bridge',
+  },
+  {
+    id: 'labubu',
+    nameKey: 'reward.labubu',
+    hintKey: 'reward.labubu.hint',
+    scoreThreshold: 1010,
+  },
 ]
-
-export function rewardForLevel(levelId: string): Reward | undefined {
-  return REWARDS.find((reward) => reward.levelId === levelId)
-}

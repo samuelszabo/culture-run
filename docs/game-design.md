@@ -68,7 +68,7 @@ Z toho vyplýva:
 Odmenu hráč získa **iba za 5 hviezdičiek** v leveli. Odmeny sú kozmetické vylepšenia postavičky:
 
 - **Čínsky drak** — vlniaci sa dračí chvost za postavičkou počas behu (odmena za Čínu — most)
-- **Labubu vzhľad** — postavička vyzerá ako labubu (uši, zúbky); v šatníku viditeľný od začiatku ako zamknutá ukážka, odomkne ho druhý level (v2)
+- **Labubu vzhľad** — postavička vyzerá ako labubu (uši, zúbky); odomkne sa získaním 1010 bodov v jednom behu (takmer dokonalý zber)
 - ďalšie pribudnú s novými levelmi (každý level = jedna unikátna odmena)
 
 Vylepšenia sa aplikujú **na základnú postavičku** (chlapec/dievča) a dajú sa kombinovať. Hráč si ich zapína/vypína v šatníku na úvodnej obrazovke. Odomknuté vylepšenia zostávajú uložené v zariadení. Zamknuté vylepšenia sú v šatníku viditeľné sivé so zámkom — motivácia hrať ďalej.

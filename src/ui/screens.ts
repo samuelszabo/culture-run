@@ -291,7 +291,7 @@ function renderWardrobe(): void {
       item.appendChild(lock)
 
       const hint = el('span', 'reward-hint')
-      hint.textContent = t('wardrobe.lockedHint')
+      hint.textContent = t(reward.hintKey)
       item.appendChild(hint)
     }
 
