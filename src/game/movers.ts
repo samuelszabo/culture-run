@@ -37,7 +37,8 @@ export function createMovers(staticObstacles: Obstacle[]): Obstacle[] {
   const staticYSet = new Set(staticObstacles.map((o) => o.trackY))
   const sortedStaticY = Array.from(staticYSet).sort((a, b) => a - b)
 
-  const MIN_CLEARANCE = 170
+  const CLEARANCE_AFTER_ROW = 280
+  const CLEARANCE_BEFORE_ROW = 170
 
   const eligibleSlots: number[] = []
 
@@ -45,8 +46,8 @@ export function createMovers(staticObstacles: Obstacle[]): Obstacle[] {
   for (let i = 0; i < boundaries.length - 1; i++) {
     const gapStart = boundaries[i]
     const gapEnd = boundaries[i + 1]
-    const usableStart = gapStart + MIN_CLEARANCE
-    const usableEnd = gapEnd - MIN_CLEARANCE
+    const usableStart = gapStart + CLEARANCE_AFTER_ROW
+    const usableEnd = gapEnd - CLEARANCE_BEFORE_ROW
     if (usableEnd - usableStart >= 1) {
       const slotY = usableStart + rand() * (usableEnd - usableStart)
       eligibleSlots.push(slotY)
