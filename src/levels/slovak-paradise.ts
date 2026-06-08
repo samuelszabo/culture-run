@@ -128,7 +128,11 @@ function createTrailMovers(walls: Obstacle[]): Obstacle[] {
   }
   slots.sort((a, b) => a - b)
 
-  const TARGET = 14
+  // Fewer, gentler movers than China's full mix (which leans on mostly-harmless
+  // firecrackers). Each patrols a limited band so a transiting player can always
+  // route around it — keeps a clean 0-death run achievable, like the wall level.
+  const TARGET = 9
+  const PATROL_HALF = 55
   const step = Math.max(1, Math.floor(slots.length / TARGET))
   for (let i = 0; i < slots.length; i += step) {
     const trackY = slots[i]
@@ -136,10 +140,10 @@ function createTrailMovers(walls: Obstacle[]): Obstacle[] {
     const kind = (i / step) % 3 === 2 ? 'carrier' : 'walker'
     const w = kind === 'walker' ? 30 : 46
     const h = kind === 'walker' ? 40 : 44
-    const minX = ROAD_LEFT + w / 2
-    const maxX = ROAD_RIGHT - w / 2
-    const x = minX + rand() * (maxX - minX)
-    const speed = kind === 'walker' ? 50 + rand() * 40 : 80 + rand() * 40
+    const x = ROAD_LEFT + w / 2 + rand() * (ROAD_RIGHT - ROAD_LEFT - w)
+    const minX = Math.max(ROAD_LEFT + w / 2, x - PATROL_HALF)
+    const maxX = Math.min(ROAD_RIGHT - w / 2, x + PATROL_HALF)
+    const speed = kind === 'walker' ? 30 + rand() * 25 : 45 + rand() * 25
     const vx = rand() < 0.5 ? speed : -speed
     movers.push({ kind, x, trackY, w, h, vx, minX, maxX, harmless: false, warning: false })
   }

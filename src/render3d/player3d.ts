@@ -37,6 +37,19 @@ export interface Player3D {
   catPetGroup: THREE.Group | null
   catPetLegs: THREE.Group[]
   catPetTailSegments: THREE.Mesh[]
+  // Bear chaser
+  chaserGroup: THREE.Group | null
+  chaserLegs: THREE.Group[]
+  chaserZOffset: number
+  // Bear cub pet
+  bearCubGroup: THREE.Group | null
+  bearCubLegs: THREE.Group[]
+  // Squirrel pet
+  squirrelGroup: THREE.Group | null
+  squirrelLegs: THREE.Group[]
+  squirrelTailSegments: THREE.Mesh[]
+  // Kroj cosmetic
+  krojGroup: THREE.Group | null
   scene: THREE.Scene
 }
 
@@ -83,6 +96,11 @@ const CAT_HEAD_Y = CAT_BODY_Y + CAT_BODY_H * 0.1
 // Front and rear leg z positions
 const CAT_FRONT_LEG_Z = CAT_HEAD_Z + CAT_HEAD_S * 0.2
 const CAT_REAR_LEG_Z = CAT_BODY_Z + CAT_BODY_L * 0.32
+
+// Bear colors
+const BEAR_BODY_COLOR = 0x7a4f2a
+const BEAR_LIMB_COLOR = 0x6b4420
+const BEAR_SNOUT_COLOR = 0xb98a5e
 
 function mat(color: number): THREE.MeshLambertMaterial {
   return new THREE.MeshLambertMaterial({ color })
@@ -188,14 +206,304 @@ function buildCatPet(): { petGroup: THREE.Group; petLegs: THREE.Group[]; petTail
   return { petGroup, petLegs, petTailSegments }
 }
 
+// Bear chaser / bear cub builder
+// Returns a simple upright bear with animatable leg groups
+function buildBear(scale: number): { group: THREE.Group; legs: THREE.Group[] } {
+  const g = new THREE.Group()
+
+  // Body proportions (relative to H)
+  const bearBodyH = H * 0.32
+  const bearBodyW = H * 0.35
+  const bearBodyD = H * 0.22
+  const bearHeadS = H * 0.26
+  const bearLegH = H * 0.26
+  const bearLegW = H * 0.12
+  const bearArmH = H * 0.24
+  const bearArmW = H * 0.11
+
+  const bearLegY = 0
+  const bearLegYTop = bearLegY + bearLegH
+  const bearTorsoYBottom = bearLegYTop
+  const bearTorsoYTop = bearTorsoYBottom + bearBodyH
+  const bearHeadYCenter = bearTorsoYTop + bearHeadS / 2
+
+  // Torso
+  const torso = box(bearBodyW, bearBodyH, bearBodyD, BEAR_BODY_COLOR)
+  torso.position.set(0, bearTorsoYBottom + bearBodyH / 2, 0)
+  g.add(torso)
+
+  // Belly patch (lighter)
+  const bellyW = bearBodyW * 0.55
+  const bellyH = bearBodyH * 0.65
+  const belly = box(bellyW, bellyH, bearBodyD * 0.1, BEAR_SNOUT_COLOR)
+  belly.position.set(0, bearTorsoYBottom + bearBodyH / 2, -(bearBodyD / 2 + bearBodyD * 0.05))
+  g.add(belly)
+
+  // Head
+  const head = box(bearHeadS * 0.95, bearHeadS, bearHeadS * 0.88, BEAR_BODY_COLOR)
+  head.position.set(0, bearHeadYCenter, 0)
+  g.add(head)
+
+  // Ears (round, using small boxes on top of head)
+  const earS = bearHeadS * 0.30
+  const earTopY = bearHeadYCenter + bearHeadS / 2 + earS * 0.3
+  const earL = box(earS, earS, earS * 0.6, BEAR_BODY_COLOR)
+  earL.position.set(-(bearHeadS * 0.30), earTopY, 0)
+  g.add(earL)
+  const earR = box(earS, earS, earS * 0.6, BEAR_BODY_COLOR)
+  earR.position.set(bearHeadS * 0.30, earTopY, 0)
+  g.add(earR)
+
+  // Muzzle/snout on FRONT (−z face)
+  const snoutW = bearHeadS * 0.52
+  const snoutH = bearHeadS * 0.30
+  const snout = box(snoutW, snoutH, H * 0.07, BEAR_SNOUT_COLOR)
+  snout.position.set(0, bearHeadYCenter - bearHeadS * 0.08, -(bearHeadS / 2 + H * 0.035))
+  g.add(snout)
+
+  // Legs (animatable)
+  const legs: THREE.Group[] = []
+  const legOffsets = [
+    [-bearLegW * 0.7, bearLegYTop, 0] as const,
+    [ bearLegW * 0.7, bearLegYTop, 0] as const,
+  ]
+  for (const [lx, ly, lz] of legOffsets) {
+    const legMesh = box(bearLegW, bearLegH, bearLegW, BEAR_LIMB_COLOR)
+    const lg = makeLimbGroup(legMesh, bearLegH, ly)
+    lg.position.set(lx, 0, lz)
+    g.add(lg)
+    legs.push(lg)
+  }
+
+  // Arms
+  const armMeshL = box(bearArmW, bearArmH, bearArmW, BEAR_LIMB_COLOR)
+  const armLG = makeLimbGroup(armMeshL, bearArmH, bearTorsoYTop - bearArmH * 0.1)
+  armLG.position.setX(-(bearBodyW / 2 + bearArmW / 2))
+  g.add(armLG)
+
+  const armMeshR = box(bearArmW, bearArmH, bearArmW, BEAR_LIMB_COLOR)
+  const armRG = makeLimbGroup(armMeshR, bearArmH, bearTorsoYTop - bearArmH * 0.1)
+  armRG.position.setX(bearBodyW / 2 + bearArmW / 2)
+  g.add(armRG)
+
+  g.scale.setScalar(scale)
+  return { group: g, legs }
+}
+
+// Bear cub pet (small, brown, quadruped style similar to cat pet)
+function buildBearCub(): { petGroup: THREE.Group; petLegs: THREE.Group[] } {
+  const petGroup = new THREE.Group()
+
+  const headMesh = box(CAT_HEAD_S, CAT_HEAD_S, CAT_HEAD_S, BEAR_BODY_COLOR)
+  headMesh.position.set(0, CAT_HEAD_Y, CAT_HEAD_Z)
+  petGroup.add(headMesh)
+
+  const torsoMesh = box(CAT_BODY_W, CAT_BODY_H, CAT_BODY_L, BEAR_BODY_COLOR)
+  torsoMesh.position.set(0, CAT_BODY_Y, CAT_BODY_Z)
+  petGroup.add(torsoMesh)
+
+  // Round ears on top of head
+  const earS = H * 0.09
+  const earTopY = CAT_HEAD_Y + CAT_HEAD_S / 2 + earS * 0.4
+  const earL = box(earS, earS, earS * 0.6, BEAR_BODY_COLOR)
+  earL.position.set(-(CAT_HEAD_S * 0.28), earTopY, CAT_HEAD_Z)
+  petGroup.add(earL)
+  const earR = box(earS, earS, earS * 0.6, BEAR_BODY_COLOR)
+  earR.position.set(CAT_HEAD_S * 0.28, earTopY, CAT_HEAD_Z)
+  petGroup.add(earR)
+
+  // Snout on −z face
+  const snoutW = CAT_HEAD_S * 0.50
+  const snoutH = CAT_HEAD_S * 0.28
+  const snout = box(snoutW, snoutH, H * 0.06, BEAR_SNOUT_COLOR)
+  snout.position.set(0, CAT_HEAD_Y - CAT_HEAD_S * 0.1, CAT_HEAD_Z - CAT_HEAD_S / 2 - H * 0.02)
+  petGroup.add(snout)
+
+  const petLegs: THREE.Group[] = []
+  const halfX = CAT_BODY_W / 2 + CAT_LEG_W * 0.1
+  const legPositions = [
+    [-halfX, CAT_FRONT_LEG_Z],
+    [ halfX, CAT_FRONT_LEG_Z],
+    [-halfX, CAT_REAR_LEG_Z],
+    [ halfX, CAT_REAR_LEG_Z],
+  ] as const
+  for (const [lx, lz] of legPositions) {
+    const legMesh = box(CAT_LEG_W, CAT_LEG_H, CAT_LEG_W, BEAR_LIMB_COLOR)
+    const lg = makeLimbGroup(legMesh, CAT_LEG_H, CAT_BODY_Y)
+    lg.position.set(lx, 0, lz)
+    petGroup.add(lg)
+    petLegs.push(lg)
+  }
+
+  petGroup.scale.setScalar(0.5)
+  return { petGroup, petLegs }
+}
+
+// Squirrel pet
+const SQUIRREL_BODY = 0xa0522d
+const SQUIRREL_CREAM = 0xf5e6c8
+
+function buildSquirrel(): { petGroup: THREE.Group; petLegs: THREE.Group[]; tailSegments: THREE.Mesh[] } {
+  const petGroup = new THREE.Group()
+
+  // Body (smaller upright rodent)
+  const bodyH = H * 0.20
+  const bodyW = H * 0.14
+  const bodyD = H * 0.12
+  const legH = H * 0.14
+  const legW = H * 0.07
+
+  const legYTop = legH
+  const torsoYBottom = legYTop
+  const torsoYCenter = torsoYBottom + bodyH / 2
+  const headS = H * 0.13
+  const headYCenter = torsoYBottom + bodyH + headS / 2
+
+  // Torso
+  const torso = box(bodyW, bodyH, bodyD, SQUIRREL_BODY)
+  torso.position.set(0, torsoYCenter, 0)
+  petGroup.add(torso)
+
+  // Cream belly
+  const belly = box(bodyW * 0.55, bodyH * 0.6, bodyD * 0.12, SQUIRREL_CREAM)
+  belly.position.set(0, torsoYCenter, -(bodyD / 2 + bodyD * 0.05))
+  petGroup.add(belly)
+
+  // Head
+  const headMesh = box(headS * 0.95, headS, headS * 0.85, SQUIRREL_BODY)
+  headMesh.position.set(0, headYCenter, 0)
+  petGroup.add(headMesh)
+
+  // Small ears
+  const earS = headS * 0.28
+  const earTopY = headYCenter + headS / 2 + earS * 0.35
+  const earL = box(earS, earS * 1.1, earS * 0.5, SQUIRREL_BODY)
+  earL.position.set(-headS * 0.28, earTopY, 0)
+  petGroup.add(earL)
+  const earR = box(earS, earS * 1.1, earS * 0.5, SQUIRREL_BODY)
+  earR.position.set(headS * 0.28, earTopY, 0)
+  petGroup.add(earR)
+
+  // Snout nub
+  const snout = box(headS * 0.38, headS * 0.24, H * 0.04, SQUIRREL_CREAM)
+  snout.position.set(0, headYCenter - headS * 0.06, -(headS / 2 + H * 0.02))
+  petGroup.add(snout)
+
+  // Legs
+  const petLegs: THREE.Group[] = []
+  for (const lx of [-legW * 0.6, legW * 0.6]) {
+    const legMesh = box(legW, legH, legW, SQUIRREL_BODY)
+    const lg = makeLimbGroup(legMesh, legH, legYTop)
+    lg.position.set(lx, 0, 0)
+    petGroup.add(lg)
+    petLegs.push(lg)
+  }
+
+  // Bushy tail — curved arc of segments going up and over
+  const tailSegments: THREE.Mesh[] = []
+  const tailSegCount = 5
+  for (let i = 0; i < tailSegCount; i++) {
+    const t = i / (tailSegCount - 1)
+    const sSize = H * 0.10 * (1 - t * 0.3)
+    const seg = box(sSize, sSize, sSize, i < tailSegCount - 1 ? SQUIRREL_BODY : SQUIRREL_CREAM)
+    petGroup.add(seg)
+    tailSegments.push(seg)
+  }
+
+  petGroup.scale.setScalar(0.5)
+  return { petGroup, petLegs, tailSegments }
+}
+
+// Kroj (Slovak folk costume) — overlay on biped, approximate on cat
+function buildKroj(isCat: boolean): THREE.Group {
+  const g = new THREE.Group()
+
+  const WHITE = 0xffffff
+  const RED = 0xd11e2a
+  const BLUE = 0x1f57a4
+  const GREEN = 0x2e8b3d
+
+  if (!isCat) {
+    // White vest/tunic over torso
+    const vestW = BODY_W * 1.08
+    const vestH = TORSO_H * 0.75
+    const vestD = BODY_D * 1.05
+    const vest = box(vestW, vestH, vestD, WHITE)
+    vest.position.set(0, TORSO_Y_BOTTOM + TORSO_H * 0.35, 0)
+    g.add(vest)
+
+    // Red trim band at bottom of vest
+    const trimH = vestH * 0.10
+    const redTrim = box(vestW * 1.02, trimH, vestD * 1.02, RED)
+    redTrim.position.set(0, TORSO_Y_BOTTOM + trimH / 2, 0)
+    g.add(redTrim)
+
+    // Blue embroidery strip (center vertical)
+    const embH = vestH * 0.65
+    const embW = vestW * 0.10
+    const blueEmb = box(embW, embH, vestD * 0.12, BLUE)
+    blueEmb.position.set(0, TORSO_Y_BOTTOM + TORSO_H * 0.38, -(vestD / 2))
+    g.add(blueEmb)
+
+    // Green side stripe
+    const greenStripeL = box(embW * 0.7, embH * 0.8, vestD * 0.08, GREEN)
+    greenStripeL.position.set(-vestW * 0.28, TORSO_Y_BOTTOM + TORSO_H * 0.38, -(vestD / 2))
+    g.add(greenStripeL)
+
+    const greenStripeR = box(embW * 0.7, embH * 0.8, vestD * 0.08, GREEN)
+    greenStripeR.position.set(vestW * 0.28, TORSO_Y_BOTTOM + TORSO_H * 0.38, -(vestD / 2))
+    g.add(greenStripeR)
+
+    // Wreath on head (torus ring)
+    const wreath = new THREE.Mesh(
+      new THREE.TorusGeometry(BODY_W * 0.44, H * 0.028, 6, 12),
+      mat(GREEN)
+    )
+    wreath.position.set(0, HEAD_Y_BOTTOM + HEAD_H + H * 0.01, 0)
+    wreath.rotation.x = Math.PI / 2
+    g.add(wreath)
+
+    // Small flower decorations on wreath (tiny colored boxes)
+    const flowerColors = [RED, BLUE, RED, BLUE, RED]
+    for (let i = 0; i < flowerColors.length; i++) {
+      const angle = (i / flowerColors.length) * Math.PI * 2
+      const r = BODY_W * 0.44
+      const flowerS = H * 0.045
+      const flower = box(flowerS, flowerS, flowerS, flowerColors[i])
+      flower.position.set(
+        Math.cos(angle) * r,
+        HEAD_Y_BOTTOM + HEAD_H + H * 0.01,
+        Math.sin(angle) * r
+      )
+      g.add(flower)
+    }
+  } else {
+    // Approximate for cat: just put a wreath around the head area
+    const wreath = new THREE.Mesh(
+      new THREE.TorusGeometry(CAT_HEAD_S * 0.52, H * 0.028, 6, 12),
+      mat(0x2e8b3d)
+    )
+    wreath.position.set(0, CAT_HEAD_Y + CAT_HEAD_S * 0.45, CAT_HEAD_Z)
+    wreath.rotation.x = Math.PI / 2
+    g.add(wreath)
+
+    const redBand = box(CAT_BODY_W * 1.04, H * 0.04, CAT_BODY_L * 0.20, RED)
+    redBand.position.set(0, CAT_BODY_Y + CAT_BODY_H / 2 + H * 0.02, CAT_BODY_Z)
+    g.add(redBand)
+  }
+
+  return g
+}
+
 export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
   const isCat = state.character === 'cat'
+  const isBear = state.character === 'bear'
   const group = new THREE.Group()
   const body = new THREE.Group()
   group.add(body)
 
   // --- Head ---
-  const headColor = isCat ? CAT_ORANGE : 0xf5c07a
+  const headColor = isCat ? CAT_ORANGE : isBear ? BEAR_BODY_COLOR : 0xf5c07a
   const headMesh = box(
     isCat ? CAT_HEAD_S : BODY_W * 0.88,
     isCat ? CAT_HEAD_S : HEAD_H,
@@ -209,8 +517,33 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
   }
   body.add(headMesh)
 
+  // Bear-specific head features: ears and muzzle
+  if (isBear) {
+    const bearEarS = HEAD_H * 0.38
+    const bearEarTopY = HEAD_Y_CENTER + HEAD_H / 2 + bearEarS * 0.35
+    const bearEarL = box(bearEarS, bearEarS, bearEarS * 0.6, BEAR_BODY_COLOR)
+    bearEarL.position.set(-(BODY_W * 0.88 / 2 - bearEarS * 0.2), bearEarTopY, 0)
+    body.add(bearEarL)
+    const bearEarR = box(bearEarS, bearEarS, bearEarS * 0.6, BEAR_BODY_COLOR)
+    bearEarR.position.set(BODY_W * 0.88 / 2 - bearEarS * 0.2, bearEarTopY, 0)
+    body.add(bearEarR)
+
+    // Muzzle on FRONT (−z face)
+    const muzzleW = BODY_W * 0.88 * 0.52
+    const muzzleH = HEAD_H * 0.34
+    const muzzle = box(muzzleW, muzzleH, BODY_D * 0.10, BEAR_SNOUT_COLOR)
+    muzzle.position.set(0, HEAD_Y_CENTER - HEAD_H * 0.10, -(BODY_D * 0.88 / 2 + BODY_D * 0.05))
+    body.add(muzzle)
+  }
+
   // --- Torso ---
-  const torsoColor = isCat ? CAT_ORANGE : state.character === 'boy' ? 0x3a7bd5 : 0xe87fac
+  const torsoColor = isCat
+    ? CAT_ORANGE
+    : isBear
+      ? BEAR_BODY_COLOR
+      : state.character === 'boy'
+        ? 0x3a7bd5
+        : 0xe87fac
   const torsoMesh = isCat
     ? box(CAT_BODY_W, CAT_BODY_H, CAT_BODY_L, torsoColor)
     : box(BODY_W, TORSO_H, BODY_D, torsoColor)
@@ -221,9 +554,18 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
   }
   body.add(torsoMesh)
 
-  // --- Biped limbs (used only for boy/girl; created-but-unused for cat) ---
-  const limbSkinColor = isCat ? CAT_ORANGE : 0xf5c07a
-  const legColor = isCat ? CAT_ORANGE : 0x2c3e7a
+  // Bear belly patch (lighter, on front face of torso)
+  if (isBear) {
+    const bellyW = BODY_W * 0.58
+    const bellyH = TORSO_H * 0.65
+    const belly = box(bellyW, bellyH, BODY_D * 0.10, BEAR_SNOUT_COLOR)
+    belly.position.set(0, TORSO_Y_BOTTOM + TORSO_H / 2, -(BODY_D / 2 + BODY_D * 0.05))
+    body.add(belly)
+  }
+
+  // --- Biped limbs (used for boy/girl/bear; created-but-unused for cat) ---
+  const limbSkinColor = isCat ? CAT_ORANGE : isBear ? BEAR_LIMB_COLOR : 0xf5c07a
+  const legColor = isCat ? CAT_ORANGE : isBear ? BEAR_LIMB_COLOR : 0x2c3e7a
 
   const armMesh = box(ARM_W, ARM_H, ARM_W, limbSkinColor)
   const armLGroup = makeLimbGroup(armMesh, ARM_H, TORSO_Y_TOP - ARM_H * 0.1)
@@ -483,6 +825,52 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     group.add(catPetGroup)
   }
 
+  // --- Bear-cub cosmetic ---
+  let bearCubGroup: THREE.Group | null = null
+  let bearCubLegs: THREE.Group[] = []
+
+  if (state.equipped.includes('bear-cub')) {
+    const built = buildBearCub()
+    bearCubGroup = built.petGroup
+    bearCubLegs = built.petLegs
+    bearCubGroup.position.set(-0.45, 0, 1.25)
+    group.add(bearCubGroup)
+  }
+
+  // --- Squirrel cosmetic ---
+  let squirrelGroup: THREE.Group | null = null
+  let squirrelLegs: THREE.Group[] = []
+  let squirrelTailSegments: THREE.Mesh[] = []
+
+  if (state.equipped.includes('squirrel')) {
+    const built = buildSquirrel()
+    squirrelGroup = built.petGroup
+    squirrelLegs = built.petLegs
+    squirrelTailSegments = built.tailSegments
+    squirrelGroup.position.set(0.5, 0, 1.05)
+    group.add(squirrelGroup)
+  }
+
+  // --- Kroj cosmetic ---
+  let krojGroup: THREE.Group | null = null
+
+  if (state.equipped.includes('kroj')) {
+    krojGroup = buildKroj(isCat)
+    body.add(krojGroup)
+  }
+
+  // --- Bear chaser ---
+  let chaserGroup: THREE.Group | null = null
+  let chaserLegs: THREE.Group[] = []
+  const chaserZOffset = 6.0  // initial offset: 3 lives
+
+  if (state.chaser) {
+    const built = buildBear(1.4)
+    chaserGroup = built.group
+    chaserLegs = built.legs
+    scene.add(chaserGroup)
+  }
+
   const pos = playerWorldPosition(state.player.x, state.distance)
   group.position.set(pos.x, 0, pos.z)
 
@@ -523,6 +911,15 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     catPetGroup,
     catPetLegs,
     catPetTailSegments,
+    chaserGroup,
+    chaserLegs,
+    chaserZOffset,
+    bearCubGroup,
+    bearCubLegs,
+    squirrelGroup,
+    squirrelLegs,
+    squirrelTailSegments,
+    krojGroup,
     scene,
   }
 }
@@ -661,25 +1058,138 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
       seg.position.set(wave, segY, segZ)
     }
   }
+
+  // Bear-cub cosmetic animation (quadruped trot, mirroring cat-pet)
+  if (p.bearCubGroup) {
+    const cubGroup = p.bearCubGroup
+    cubGroup.position.x = -0.45 + Math.sin(elapsed * 2.2) * 0.07
+    cubGroup.position.z = 1.25
+
+    for (const lg of p.bearCubLegs) lg.rotation.x = 0
+
+    if (phase === 'running') {
+      const petSwing = Math.sin(distance * 0.05)
+      const amp = 0.45
+      p.bearCubLegs[0].rotation.x = -petSwing * amp
+      p.bearCubLegs[1].rotation.x =  petSwing * amp
+      p.bearCubLegs[2].rotation.x =  petSwing * amp
+      p.bearCubLegs[3].rotation.x = -petSwing * amp
+    } else if (phase === 'finished') {
+      cubGroup.position.y = Math.abs(Math.sin(elapsed * 5)) * 0.2
+    } else {
+      cubGroup.position.y = 0
+    }
+  }
+
+  // Squirrel cosmetic animation
+  if (p.squirrelGroup) {
+    const sqGroup = p.squirrelGroup
+
+    // Slight hop and sway
+    sqGroup.position.x = 0.5 + Math.sin(elapsed * 3.1) * 0.06
+    sqGroup.position.z = 1.05
+
+    for (const lg of p.squirrelLegs) lg.rotation.x = 0
+
+    if (phase === 'running') {
+      const sqSwing = Math.sin(distance * 0.06)
+      p.squirrelLegs[0].rotation.x =  sqSwing * 0.55
+      p.squirrelLegs[1].rotation.x = -sqSwing * 0.55
+      sqGroup.position.y = Math.abs(Math.sin(distance * 0.12)) * 0.05
+    } else if (phase === 'finished') {
+      sqGroup.position.y = Math.abs(Math.sin(elapsed * 6)) * 0.18
+    } else {
+      sqGroup.position.y = 0
+    }
+
+    // Bushy tail arc: segments curve up and back
+    const sqTailCount = p.squirrelTailSegments.length
+    for (let i = 0; i < sqTailCount; i++) {
+      const seg = p.squirrelTailSegments[i]
+      const t = (i + 1) / sqTailCount
+      const arc = Math.sin(t * Math.PI * 0.8)
+      const wave = Math.sin(elapsed * 2.5 + i * 0.7) * 0.03
+      // segments go up and arc over the back (+z rear)
+      const segX = wave
+      const segY = (0.15 + arc * 0.28) * sqGroup.scale.x   // in pet local space (scale 0.5)
+      const segZ = 0.05 + t * 0.28
+      seg.position.set(segX, segY, segZ)
+    }
+  }
+
+  // Bear chaser animation
+  if (p.chaserGroup) {
+    const playerPos = playerWorldPosition(player.x, distance)
+
+    // Target z offset based on lives and phase
+    let targetOffset: number
+    if (phase === 'gameover') {
+      targetOffset = 0.7
+    } else if (phase === 'dying') {
+      const livesOffset = state.lives === 3 ? 6.0 : state.lives === 2 ? 4.0 : 2.3
+      targetOffset = livesOffset - 1.2
+    } else {
+      targetOffset = state.lives === 3 ? 6.0 : state.lives === 2 ? 4.0 : 2.3
+    }
+
+    const lerpFactor = phase === 'gameover' ? 0.25 : 0.06
+    p.chaserZOffset += (targetOffset - p.chaserZOffset) * lerpFactor
+
+    const chaserX = playerPos.x + Math.sin(elapsed * 2) * 0.1
+    const runBob = phase === 'running' ? Math.abs(Math.sin(distance * 0.07)) * 0.06 : 0
+    const chaserY = runBob
+
+    p.chaserGroup.position.set(chaserX, chaserY, playerPos.z + p.chaserZOffset)
+
+    // Animate legs
+    for (const lg of p.chaserLegs) lg.rotation.x = 0
+
+    if (phase === 'gameover') {
+      // Rearing/pouncing pose: tilt body forward, raise front legs
+      p.chaserGroup.rotation.x = -Math.PI * 0.3
+      if (p.chaserLegs.length >= 2) {
+        p.chaserLegs[0].rotation.x = -Math.PI * 0.5  // left leg raised
+        p.chaserLegs[1].rotation.x = -Math.PI * 0.5  // right leg raised
+      }
+    } else if (phase === 'running' || phase === 'dying') {
+      p.chaserGroup.rotation.x = 0
+      const chaserSwing = Math.sin(distance * 0.05)
+      if (p.chaserLegs.length >= 2) {
+        p.chaserLegs[0].rotation.x =  chaserSwing * 0.6
+        p.chaserLegs[1].rotation.x = -chaserSwing * 0.6
+      }
+    } else {
+      p.chaserGroup.rotation.x = 0
+    }
+  }
 }
 
 export function disposePlayer3D(p: Player3D): void {
   p.scene.remove(p.group)
 
-  const geometries = new Set<THREE.BufferGeometry>()
-  const materials = new Set<THREE.Material>()
-
-  p.group.traverse((obj) => {
-    if (obj instanceof THREE.Mesh) {
-      geometries.add(obj.geometry)
-      if (Array.isArray(obj.material)) {
-        obj.material.forEach((m) => materials.add(m))
-      } else {
-        materials.add(obj.material)
+  const disposeGroup = (g: THREE.Group | null) => {
+    if (!g) return
+    const geometries = new Set<THREE.BufferGeometry>()
+    const materials = new Set<THREE.Material>()
+    g.traverse((obj) => {
+      if (obj instanceof THREE.Mesh) {
+        geometries.add(obj.geometry)
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach((m) => materials.add(m))
+        } else {
+          materials.add(obj.material)
+        }
       }
-    }
-  })
+    })
+    geometries.forEach((g) => g.dispose())
+    materials.forEach((m) => m.dispose())
+  }
 
-  geometries.forEach((g) => g.dispose())
-  materials.forEach((m) => m.dispose())
+  disposeGroup(p.group)
+
+  // Dispose chaser group (it lives directly in the scene, not under p.group)
+  if (p.chaserGroup) {
+    p.scene.remove(p.chaserGroup)
+    disposeGroup(p.chaserGroup)
+  }
 }

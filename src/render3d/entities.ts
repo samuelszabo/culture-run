@@ -195,6 +195,72 @@ function makeFirecracker(geos: THREE.BufferGeometry[], mats: THREE.Material[]): 
   return { group, normal: normalGroup, warning: warnGroup, blast: blastGroup }
 }
 
+function makeGorgeWall(width: number, geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const height = OBSTACLE_WORLD_HEIGHTS['gorge-wall']
+  const depth = toWorldSize(35)
+
+  const mainGeo = new THREE.BoxGeometry(width, height, depth)
+  const mainMat = new THREE.MeshLambertMaterial({ color: 0x6b6258, flatShading: true })
+  geos.push(mainGeo)
+  mats.push(mainMat)
+  const main = new THREE.Mesh(mainGeo, mainMat)
+  main.position.y = height / 2
+  group.add(main)
+
+  const jut1Geo = new THREE.BoxGeometry(width * 0.55, height * 0.6, depth * 0.5)
+  const jut1Mat = new THREE.MeshLambertMaterial({ color: 0x5a5048, flatShading: true })
+  geos.push(jut1Geo)
+  mats.push(jut1Mat)
+  const jut1 = new THREE.Mesh(jut1Geo, jut1Mat)
+  jut1.position.set(width * 0.18, height * 0.7 + height * 0.3, depth * 0.1)
+  group.add(jut1)
+
+  const jut2Geo = new THREE.BoxGeometry(width * 0.35, height * 0.35, depth * 0.4)
+  const jut2Mat = new THREE.MeshLambertMaterial({ color: 0x6b6258, flatShading: true })
+  geos.push(jut2Geo)
+  mats.push(jut2Mat)
+  const jut2 = new THREE.Mesh(jut2Geo, jut2Mat)
+  jut2.position.set(-width * 0.22, height * 0.85 + height * 0.175, -depth * 0.15)
+  group.add(jut2)
+
+  return group
+}
+
+function makeLadder(width: number, geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const ladderWidth = Math.min(width, 0.8)
+  const length = toWorldSize(90)
+  const railH = 0.06
+  const railThick = 0.05
+
+  const railMat = new THREE.MeshLambertMaterial({ color: 0x8b5e3c })
+  mats.push(railMat)
+
+  const railGeo = new THREE.BoxGeometry(railThick, railThick, length)
+  geos.push(railGeo)
+  const railL = new THREE.Mesh(railGeo, railMat)
+  railL.position.set(-ladderWidth * 0.4, railH, 0)
+  group.add(railL)
+  const railR = new THREE.Mesh(railGeo, railMat)
+  railR.position.set(ladderWidth * 0.4, railH, 0)
+  group.add(railR)
+
+  const rungMat = new THREE.MeshLambertMaterial({ color: 0xa9744f })
+  mats.push(rungMat)
+  const rungGeo = new THREE.BoxGeometry(ladderWidth * 0.8, railThick, railThick)
+  geos.push(rungGeo)
+  const rungCount = 6
+  for (let i = 0; i < rungCount; i++) {
+    const rung = new THREE.Mesh(rungGeo, rungMat)
+    const zPos = -length / 2 + (length / (rungCount - 1)) * i
+    rung.position.set(0, railH, zPos)
+    group.add(rung)
+  }
+
+  return group
+}
+
 function makeNoodles(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
   const group = new THREE.Group()
   const s = COLLECTIBLE_WORLD_SIZE
@@ -266,6 +332,113 @@ function makeTea(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Gr
   return group
 }
 
+function makeHalusky(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const s = COLLECTIBLE_WORLD_SIZE
+
+  const bowlGeo = new THREE.CylinderGeometry(s * 0.48, s * 0.38, s * 0.3, 12)
+  const bowlMat = new THREE.MeshLambertMaterial({ color: 0xf2efe9 })
+  geos.push(bowlGeo)
+  mats.push(bowlMat)
+  const bowl = new THREE.Mesh(bowlGeo, bowlMat)
+  bowl.position.y = -s * 0.05
+  group.add(bowl)
+
+  const dumplingMat = new THREE.MeshLambertMaterial({ color: 0xe9dca8 })
+  mats.push(dumplingMat)
+  const dumplingGeo = new THREE.SphereGeometry(s * 0.1, 6, 5)
+  geos.push(dumplingGeo)
+  const dumplingCount = 5
+  for (let i = 0; i < dumplingCount; i++) {
+    const d = new THREE.Mesh(dumplingGeo, dumplingMat)
+    const angle = (i / dumplingCount) * Math.PI * 2
+    d.position.set(Math.cos(angle) * s * 0.22, s * 0.13, Math.sin(angle) * s * 0.22)
+    group.add(d)
+  }
+
+  const herbMat = new THREE.MeshLambertMaterial({ color: 0x4a7c40 })
+  mats.push(herbMat)
+  const herbGeo = new THREE.BoxGeometry(s * 0.06, s * 0.04, s * 0.06)
+  geos.push(herbGeo)
+  for (let i = 0; i < 2; i++) {
+    const h = new THREE.Mesh(herbGeo, herbMat)
+    h.position.set((i === 0 ? 1 : -1) * s * 0.1, s * 0.2, s * 0.05)
+    group.add(h)
+  }
+
+  return group
+}
+
+function makePstruh(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const s = COLLECTIBLE_WORLD_SIZE
+
+  const bodyGeo = new THREE.SphereGeometry(s * 0.3, 8, 6)
+  const bodyMat = new THREE.MeshLambertMaterial({ color: 0x8a9a7a })
+  geos.push(bodyGeo)
+  mats.push(bodyMat)
+  const body = new THREE.Mesh(bodyGeo, bodyMat)
+  body.scale.set(1.5, 0.55, 0.65)
+  group.add(body)
+
+  const tailGeo = new THREE.ConeGeometry(s * 0.18, s * 0.28, 4)
+  const tailMat = new THREE.MeshLambertMaterial({ color: 0xb8c0bc })
+  geos.push(tailGeo)
+  mats.push(tailMat)
+  const tail = new THREE.Mesh(tailGeo, tailMat)
+  tail.rotation.z = -Math.PI / 2
+  tail.position.set(-s * 0.52, 0, 0)
+  group.add(tail)
+
+  const stripeGeo = new THREE.BoxGeometry(s * 0.6, s * 0.06, s * 0.08)
+  const stripeMat = new THREE.MeshLambertMaterial({ color: 0xc97a6a })
+  geos.push(stripeGeo)
+  mats.push(stripeMat)
+  const stripe = new THREE.Mesh(stripeGeo, stripeMat)
+  stripe.position.set(s * 0.1, s * 0.05, s * 0.18)
+  group.add(stripe)
+
+  const eyeGeo = new THREE.SphereGeometry(s * 0.04, 5, 4)
+  const eyeMat = new THREE.MeshLambertMaterial({ color: 0x111111 })
+  geos.push(eyeGeo)
+  mats.push(eyeMat)
+  const eye = new THREE.Mesh(eyeGeo, eyeMat)
+  eye.position.set(s * 0.38, s * 0.08, s * 0.16)
+  group.add(eye)
+
+  return group
+}
+
+function makeCucoriedky(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const s = COLLECTIBLE_WORLD_SIZE
+
+  const leafGeo = new THREE.BoxGeometry(s * 0.8, s * 0.05, s * 0.7)
+  const leafMat = new THREE.MeshLambertMaterial({ color: 0x3d7a30 })
+  geos.push(leafGeo)
+  mats.push(leafMat)
+  const leaf = new THREE.Mesh(leafGeo, leafMat)
+  leaf.position.y = -s * 0.2
+  group.add(leaf)
+
+  const berryMat = new THREE.MeshLambertMaterial({ color: 0x3a4a8c })
+  mats.push(berryMat)
+  const berryGeo = new THREE.SphereGeometry(s * 0.12, 6, 5)
+  geos.push(berryGeo)
+  const berryPositions = [
+    [0, 0, 0], [-s * 0.2, 0, s * 0.1], [s * 0.18, 0, -s * 0.12],
+    [-s * 0.1, s * 0.12, -s * 0.15], [s * 0.08, s * 0.1, s * 0.16],
+    [s * 0.22, s * 0.05, s * 0.08],
+  ]
+  for (const [bx, by, bz] of berryPositions) {
+    const b = new THREE.Mesh(berryGeo, berryMat)
+    b.position.set(bx, by - s * 0.08, bz)
+    group.add(b)
+  }
+
+  return group
+}
+
 function buildObstacleEntry(
   obstacle: Obstacle,
   scene: THREE.Scene,
@@ -292,6 +465,10 @@ function buildObstacleEntry(
     group = makeWall(width, geos, mats)
   } else if (kind === 'walker') {
     group = makeWalker(geos, mats)
+  } else if (kind === 'gorge-wall') {
+    group = makeGorgeWall(width, geos, mats)
+  } else if (kind === 'ladder') {
+    group = makeLadder(width, geos, mats)
   } else {
     group = makeCarrier(geos, mats)
   }
@@ -399,6 +576,12 @@ function buildCollectibleEntry(
     group = makeNoodles(geos, mats)
   } else if (collectible.kind === 'baozi') {
     group = makeBaozi(geos, mats)
+  } else if (collectible.kind === 'halusky') {
+    group = makeHalusky(geos, mats)
+  } else if (collectible.kind === 'pstruh') {
+    group = makePstruh(geos, mats)
+  } else if (collectible.kind === 'cucoriedky') {
+    group = makeCucoriedky(geos, mats)
   } else {
     group = makeTea(geos, mats)
   }
