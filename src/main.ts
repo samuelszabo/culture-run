@@ -50,6 +50,10 @@ let currentRunStars = 0
 
 const LANDMARK_TRIGGER_AHEAD = 1800
 
+function bestScore(): number {
+  return save.bestScores[LEVEL_ID]?.score ?? 0
+}
+
 function newGame(): GameState {
   const level = createChinaWallLevel()
   return createGameState(level.obstacles, level.collectibles, save.character ?? 'boy', [
@@ -80,6 +84,7 @@ function startGame(): void {
   landmarksShown = new Set()
   lastToastSeq = 0
   input.touchTargetX = null
+  input.jumpQueued = false
   showHud()
 }
 
@@ -177,6 +182,7 @@ function update(dt: number): void {
               capturedState,
               { onRestart: startGame, onHome: goHome },
               quizBonusEarned,
+              bestScore(),
             )
           },
         },
@@ -204,6 +210,8 @@ function update(dt: number): void {
         onHome: goHome,
         onQuiz: quizAvailable ? openQuiz : undefined,
       },
+      undefined,
+      bestScore(),
     )
   }
 }
@@ -213,7 +221,7 @@ function render(): void {
     updateStage(stage, state)
     if (entities) updateEntities(entities, state)
     if (player3d) updatePlayer3D(player3d, state)
-    updateHud(state)
+    updateHud(state, bestScore())
     if (state.lastCollected.seq !== lastToastSeq && state.lastCollected.kind !== '') {
       lastToastSeq = state.lastCollected.seq
       showCollectToast(t('food.' + state.lastCollected.kind + '.name'))

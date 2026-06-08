@@ -6,10 +6,12 @@ let container: HTMLDivElement | null = null
 const heartSpans: HTMLSpanElement[] = []
 let progressFill: HTMLDivElement | null = null
 let scoreSpan: HTMLSpanElement | null = null
+let bestSpan: HTMLSpanElement | null = null
 
 let lastLives = -1
 let lastProgress = -1
 let lastScore = -1
+let lastBest = -1
 
 export function initHud(): void {
   if (container) return
@@ -38,14 +40,26 @@ export function initHud(): void {
   scoreSpan.className = 'hud-score'
   scoreSpan.textContent = `${t('hud.score')}: 0`
 
+  bestSpan = document.createElement('span')
+  bestSpan.className = 'hud-best'
+  bestSpan.textContent = `${t('hud.best')}: 0`
+
   container.appendChild(heartsEl)
   container.appendChild(progressTrack)
   container.appendChild(scoreSpan)
+  container.appendChild(bestSpan)
   document.body.appendChild(container)
 }
 
-export function updateHud(state: GameState): void {
+export function updateHud(state: GameState, best: number): void {
   if (!container) return
+
+  if (best !== lastBest) {
+    lastBest = best
+    if (bestSpan) {
+      bestSpan.textContent = `${t('hud.best')}: ${best}`
+    }
+  }
 
   if (state.lives !== lastLives) {
     lastLives = state.lives

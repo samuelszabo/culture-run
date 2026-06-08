@@ -17,6 +17,7 @@ export function showResults(
   state: GameState,
   callbacks: ResultsCallbacks,
   quizBonus?: number,
+  best?: number,
 ): void {
   hideResults()
 
@@ -52,6 +53,13 @@ export function showResults(
   overlay.appendChild(title)
   overlay.appendChild(starsRow)
   overlay.appendChild(scoreEl)
+
+  if (best !== undefined) {
+    const bestEl = document.createElement('div')
+    bestEl.className = 'results-best'
+    bestEl.textContent = `${t('results.best')}: ${best}`
+    overlay.appendChild(bestEl)
+  }
 
   // Quiz bonus line (shown after quiz is completed)
   if (quizBonus !== undefined && quizBonus > 0) {

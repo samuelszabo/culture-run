@@ -57,6 +57,16 @@
   font-weight: bold;
 }
 
+.hud-best {
+  position: absolute;
+  top: 32px;
+  right: 12px;
+  color: #f7c325;
+  font-size: 13px;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
 .results-overlay {
   position: fixed;
   inset: 0;
@@ -125,6 +135,13 @@
   font-size: clamp(1rem, 4vw, 1.3rem);
   font-weight: 800;
   color: #ffffff;
+  text-align: center;
+}
+
+.results-best {
+  font-size: clamp(0.85rem, 3vw, 1.05rem);
+  font-weight: 800;
+  color: #f7c325;
   text-align: center;
 }
 

@@ -10,6 +10,13 @@ export const STARTING_LIVES = 3
 export const DEATH_PAUSE_SECONDS = 1.5
 export const INVULNERABLE_SECONDS = 2
 
+// Jump physics, in track-space px (vertical axis, separate from the 2D
+// collision plane). Apex ≈ JUMP_VELOCITY² / (2·JUMP_GRAVITY) ≈ 81px.
+export const JUMP_VELOCITY = 540
+export const JUMP_GRAVITY = 1800
+// Airborne above this height clears a jumpable obstacle.
+export const JUMP_CLEAR_HEIGHT = 26
+
 export type Character = 'boy' | 'girl' | 'cat'
 
 export type RewardId = 'dragon-tail' | 'labubu' | 'cat-pet'
@@ -35,9 +42,16 @@ export interface InputState {
   leftHeld: boolean
   rightHeld: boolean
   touchTargetX: number | null
+  jumpQueued: boolean
 }
 
 export type ObstacleKind = 'stall' | 'wall' | 'walker' | 'carrier' | 'firecracker'
+
+// Low, ground-level obstacles the player can leap over. Tall barriers
+// (stalls/walls) and pedestrians (walkers/carriers) must still be dodged.
+export function isJumpable(kind: ObstacleKind): boolean {
+  return kind === 'firecracker'
+}
 
 export interface Obstacle {
   kind: ObstacleKind
@@ -72,6 +86,8 @@ export interface Player {
   w: number
   h: number
   invulnerableFor: number
+  jumpHeight: number
+  jumpVel: number
 }
 
 export interface GameState {
@@ -94,7 +110,7 @@ export interface GameState {
 }
 
 export function createInputState(): InputState {
-  return { leftHeld: false, rightHeld: false, touchTargetX: null }
+  return { leftHeld: false, rightHeld: false, touchTargetX: null, jumpQueued: false }
 }
 
 export function createGameState(
@@ -105,7 +121,7 @@ export function createGameState(
 ): GameState {
   return {
     phase: 'running',
-    player: { x: GAME_WIDTH / 2, w: 36, h: 48, invulnerableFor: 0 },
+    player: { x: GAME_WIDTH / 2, w: 36, h: 48, invulnerableFor: 0, jumpHeight: 0, jumpVel: 0 },
     character,
     equipped,
     obstacles,

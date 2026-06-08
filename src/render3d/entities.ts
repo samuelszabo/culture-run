@@ -312,11 +312,72 @@ function normalizeModel(model: THREE.Group): void {
   model.position.set(-center.x, -center.y, -center.z)
 }
 
+// The CC0 Kenney models reference a shared `colormap.png` atlas that isn't
+// bundled, so they would render flat-white. Re-colour them in code with
+// realistic food colours instead. Single-mesh vessels (bowl, cup) get a
+// height-based two-tone (vessel below, contents above); the multi-part steamer
+// is coloured per node name.
+type FoodPaint =
+  | { mode: 'twoTone'; vessel: number; contents: number; frac: number }
+  | { mode: 'byNode'; colors: Record<string, number>; fallback: number }
+
+const FOOD_PAINT: Record<CollectibleKind, FoodPaint> = {
+  // White ceramic bowl with warm noodle broth on top.
+  noodles: { mode: 'twoTone', vessel: 0xf2efe9, contents: 0xe6b25a, frac: 0.6 },
+  // Pale celadon cup with green tea.
+  tea: { mode: 'twoTone', vessel: 0xa7c083, contents: 0x6f8f3f, frac: 0.78 },
+  // Woven bamboo steamer; lid slightly lighter than the basket layers.
+  baozi: { mode: 'byNode', colors: { lid: 0xd9be8a }, fallback: 0xc8a973 },
+}
+
+function paintTwoTone(
+  mesh: THREE.Mesh,
+  vessel: number,
+  contents: number,
+  frac: number,
+  mats: THREE.Material[],
+): void {
+  const geo = mesh.geometry
+  geo.computeBoundingBox()
+  const box = geo.boundingBox!
+  const threshold = box.min.y + (box.max.y - box.min.y) * frac
+  const pos = geo.attributes.position
+  const colors = new Float32Array(pos.count * 3)
+  const low = new THREE.Color(vessel)
+  const high = new THREE.Color(contents)
+  for (let i = 0; i < pos.count; i++) {
+    const c = pos.getY(i) >= threshold ? high : low
+    colors[i * 3] = c.r
+    colors[i * 3 + 1] = c.g
+    colors[i * 3 + 2] = c.b
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+  const mat = new THREE.MeshLambertMaterial({ vertexColors: true })
+  mesh.material = mat
+  mats.push(mat)
+}
+
+function paintModel(instance: THREE.Group, kind: CollectibleKind, mats: THREE.Material[]): void {
+  const paint = FOOD_PAINT[kind]
+  instance.traverse((obj) => {
+    if (!(obj instanceof THREE.Mesh)) return
+    if (paint.mode === 'twoTone') {
+      paintTwoTone(obj, paint.vessel, paint.contents, paint.frac, mats)
+    } else {
+      const color = paint.colors[obj.name] ?? paint.fallback
+      const mat = new THREE.MeshLambertMaterial({ color })
+      obj.material = mat
+      mats.push(mat)
+    }
+  })
+}
+
 function swapCollectibleModel(pool: EntityPool, kind: CollectibleKind, model: THREE.Group): void {
   for (const entry of pool.collectibles) {
     if (entry.collectible.kind !== kind) continue
     const instance = model.clone()
     normalizeModel(instance)
+    paintModel(instance, kind, pool.materials)
     entry.group.clear()
     entry.group.add(instance)
   }

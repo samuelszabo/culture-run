@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { GameState, DEATH_PAUSE_SECONDS } from '../game/types'
-import { playerWorldPosition, PLAYER_WORLD_HEIGHT } from './world'
+import { playerWorldPosition, PLAYER_WORLD_HEIGHT, toWorldSize } from './world'
 
 export interface Player3D {
   group: THREE.Group
@@ -533,7 +533,7 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
   const isCat = state.character === 'cat'
 
   const pos = playerWorldPosition(player.x, distance)
-  group.position.set(pos.x, 0, pos.z)
+  group.position.set(pos.x, toWorldSize(player.jumpHeight), pos.z)
 
   const isBlinking = player.invulnerableFor > 0 && Math.floor(elapsed * 10) % 2 === 0
   group.visible = !isBlinking
@@ -566,6 +566,19 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
       armLGroup.rotation.x = -swing * 0.5
       armRGroup.rotation.x =  swing * 0.5
       body.position.y = Math.abs(Math.sin(distance * 0.1)) * 0.04
+    }
+
+    // Tuck limbs while airborne for a clear jump pose
+    if (player.jumpHeight > 0) {
+      if (isCat) {
+        for (const lg of catLegs) lg.rotation.x = -0.5
+      } else {
+        legLGroup.rotation.x = -0.7
+        legRGroup.rotation.x = -0.4
+        armLGroup.rotation.x = -0.6
+        armRGroup.rotation.x = -0.6
+        body.position.y = 0
+      }
     }
   } else if (phase === 'dying') {
     const progress = Math.max(0, Math.min(1, 1 - deathPauseFor / DEATH_PAUSE_SECONDS))
