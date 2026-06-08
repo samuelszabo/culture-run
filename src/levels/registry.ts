@@ -1,0 +1,69 @@
+import { Level, createChinaWallLevel } from './china-wall'
+import { Landmark } from './landmark'
+import { SLOVAK_PARADISE_LANDMARKS, createSlovakParadiseLevel } from './slovak-paradise'
+
+// China landmarks live here (registry) rather than in the render layer so the
+// game loop can trigger captions without importing render3d.
+const CHINA_WALL_LANDMARKS: Landmark[] = [
+  { id: 'watchtower', trackY: 4000, nameKey: 'landmark.watchtower', factKey: 'landmark.watchtower.fact' },
+  { id: 'pagoda', trackY: 10000, nameKey: 'landmark.pagoda', factKey: 'landmark.pagoda.fact' },
+  { id: 'lion', trackY: 15500, nameKey: 'landmark.lion', factKey: 'landmark.lion.fact' },
+]
+
+export interface LevelDef {
+  id: string
+  countryKey: string
+  flag: string
+  // Which render environment to activate (see render3d/scene.ts).
+  environmentId: string
+  // When true a chasing bear renders behind the player (Slovak Paradise).
+  chaser: boolean
+  createLevel(): Level
+  landmarks: Landmark[]
+  areaNameKey: string
+  areaInfoKey: string
+  cardTitleKey: string
+  cardFactKey: string
+  resultsFactKey: string
+}
+
+export const LEVELS: Record<string, LevelDef> = {
+  'china-wall': {
+    id: 'china-wall',
+    countryKey: 'china',
+    flag: '🇨🇳',
+    environmentId: 'china-wall',
+    chaser: false,
+    createLevel: createChinaWallLevel,
+    landmarks: CHINA_WALL_LANDMARKS,
+    areaNameKey: 'area.china-wall',
+    areaInfoKey: 'area.china-wall.info',
+    cardTitleKey: 'card.china-wall.title',
+    cardFactKey: 'card.china-wall.fact',
+    resultsFactKey: 'results.fact.china-wall',
+  },
+  'slovak-paradise': {
+    id: 'slovak-paradise',
+    countryKey: 'slovakia',
+    flag: '🇸🇰',
+    environmentId: 'slovak-paradise',
+    chaser: true,
+    createLevel: createSlovakParadiseLevel,
+    landmarks: SLOVAK_PARADISE_LANDMARKS,
+    areaNameKey: 'area.slovak-paradise',
+    areaInfoKey: 'area.slovak-paradise.info',
+    cardTitleKey: 'card.slovak-paradise.title',
+    cardFactKey: 'card.slovak-paradise.fact',
+    resultsFactKey: 'results.fact.slovak-paradise',
+  },
+}
+
+export function getLevel(id: string): LevelDef {
+  return LEVELS[id] ?? LEVELS['china-wall']
+}
+
+// Maps a country key to its (single, for now) level id.
+export const COUNTRY_LEVEL: Record<string, string> = {
+  china: 'china-wall',
+  slovakia: 'slovak-paradise',
+}

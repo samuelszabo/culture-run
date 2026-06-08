@@ -93,7 +93,10 @@ export function recordLevelResultWithStars(save: SaveData, levelId: string, scor
     const earnedByScore = reward.scoreThreshold !== undefined && score >= reward.scoreThreshold
     if (earnedByLevel || earnedByScore) {
       save.unlockedRewards.push(reward.id)
-      save.equippedRewards.push(reward.id)
+      // Character-unlock rewards aren't equippable cosmetics — don't auto-equip.
+      if (reward.equippable !== false) {
+        save.equippedRewards.push(reward.id)
+      }
       newlyUnlocked.push(reward.id)
     }
   }

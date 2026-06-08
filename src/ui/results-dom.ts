@@ -18,6 +18,7 @@ export function showResults(
   callbacks: ResultsCallbacks,
   quizBonus?: number,
   best?: number,
+  factKey?: string,
 ): void {
   hideResults()
 
@@ -89,10 +90,10 @@ export function showResults(
     banner.appendChild(bannerTitle)
     banner.appendChild(bannerName)
     overlay.appendChild(banner)
-  } else if (finished) {
+  } else if (finished && factKey) {
     const fact = document.createElement('div')
     fact.className = 'results-fact'
-    fact.textContent = t('results.fact.china-wall')
+    fact.textContent = t(factKey)
     overlay.appendChild(fact)
   }
 

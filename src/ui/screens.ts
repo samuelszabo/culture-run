@@ -2,10 +2,11 @@ import './screens.css'
 import { SaveData, Character, RewardId } from '../game/types'
 import { REWARDS } from '../game/rewards'
 import { ALBUM_ENTRIES } from '../game/album'
+import { COUNTRY_LEVEL, getLevel } from '../levels/registry'
 import { t } from '../i18n/strings'
 
 export interface ScreensCallbacks {
-  onStartGame(): void
+  onStartGame(levelId: string): void
 }
 
 type Screen = 'home' | 'character' | 'country' | 'area' | 'wardrobe' | 'album'
@@ -14,11 +15,30 @@ let ui: HTMLElement
 let save: SaveData
 let persist: () => void
 let callbacks: ScreensCallbacks
+let selectedCountry = 'china'
 
 const REWARD_ICONS: Record<RewardId, string> = {
   'dragon-tail': '🐉',
   'labubu': '👾',
   'cat-pet': '🐈',
+  'bear-cub': '🧸',
+  'kroj': '👗',
+  'squirrel': '🐿️',
+  'playable-bear': '🐻',
+}
+
+// Characters that always exist vs. those gated behind a reward unlock.
+const BASE_CHARACTERS: Character[] = ['boy', 'girl', 'cat']
+
+function isCharacterUnlocked(ch: Character): boolean {
+  if (ch === 'bear') return save.unlockedRewards.includes('playable-bear')
+  return true
+}
+
+function availableCharacters(): Character[] {
+  const list: Character[] = [...BASE_CHARACTERS]
+  if (isCharacterUnlocked('bear')) list.push('bear')
+  return list
 }
 
 export function initScreens(
@@ -94,9 +114,9 @@ function renderCharacter(): void {
 
   const grid = div('character-grid')
 
-  grid.appendChild(characterCard('boy'))
-  grid.appendChild(characterCard('girl'))
-  grid.appendChild(characterCard('cat'))
+  for (const ch of BASE_CHARACTERS) grid.appendChild(characterCard(ch))
+  // Bear is shown as a locked teaser until the playable-bear reward is earned.
+  grid.appendChild(characterCard('bear'))
 
   wrap.appendChild(grid)
 
@@ -124,19 +144,35 @@ function createCharacterFigure(character: Character): HTMLDivElement {
     figure.appendChild(div('cat-tail'))
   }
 
+  if (character === 'bear') {
+    figure.appendChild(div('bear-ear bear-ear--left'))
+    figure.appendChild(div('bear-ear bear-ear--right'))
+    figure.appendChild(div('bear-snout'))
+  }
+
   return figure
 }
 
 function characterCard(character: Character): HTMLElement {
   const card = div('character-card')
-  card.setAttribute('role', 'button')
-  card.setAttribute('tabindex', '0')
+  const unlocked = isCharacterUnlocked(character)
 
   const label = el('span', 'character-label')
   label.textContent = t(`character.${character}`)
 
   card.appendChild(createCharacterFigure(character))
   card.appendChild(label)
+
+  if (!unlocked) {
+    card.classList.add('character-card--locked')
+    const lock = el('span', 'lock-icon')
+    lock.textContent = '🔒'
+    card.appendChild(lock)
+    return card
+  }
+
+  card.setAttribute('role', 'button')
+  card.setAttribute('tabindex', '0')
 
   const selectCharacter = () => {
     save.character = character
@@ -163,11 +199,11 @@ function renderCountry(): void {
 
   const countries: Array<{ key: string; flag: string; unlocked: boolean }> = [
     { key: 'china', flag: '🇨🇳', unlocked: true },
+    { key: 'slovakia', flag: '🇸🇰', unlocked: true },
     { key: 'japan', flag: '🇯🇵', unlocked: false },
     { key: 'italy', flag: '🇮🇹', unlocked: false },
     { key: 'egypt', flag: '🇪🇬', unlocked: false },
     { key: 'france', flag: '🇫🇷', unlocked: false },
-    { key: 'slovakia', flag: '🇸🇰', unlocked: false },
   ]
 
   for (const country of countries) {
@@ -190,11 +226,15 @@ function renderCountry(): void {
       soon.textContent = t('country.soon')
       card.appendChild(soon)
     } else {
+      const openArea = () => {
+        selectedCountry = country.key
+        renderScreen('area')
+      }
       card.setAttribute('role', 'button')
       card.setAttribute('tabindex', '0')
-      card.addEventListener('click', () => renderScreen('area'))
+      card.addEventListener('click', openArea)
       card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') renderScreen('area')
+        if (e.key === 'Enter' || e.key === ' ') openArea()
       })
     }
 
@@ -217,20 +257,23 @@ function renderArea(): void {
   title.textContent = t('area.title')
   wrap.appendChild(title)
 
+  const levelId = COUNTRY_LEVEL[selectedCountry] ?? 'china-wall'
+  const level = getLevel(levelId)
+
   const card = div('area-card')
 
   const areaName = el('h3', 'area-name')
-  areaName.textContent = t('area.china-wall')
+  areaName.textContent = t(level.areaNameKey)
   card.appendChild(areaName)
 
   const info = el('p', 'area-info')
-  info.textContent = t('area.china-wall.info')
+  info.textContent = t(level.areaInfoKey)
   card.appendChild(info)
 
   const playBtn = button('btn btn-primary', t('menu.play'))
   playBtn.addEventListener('click', () => {
     hideScreens()
-    callbacks.onStartGame()
+    callbacks.onStartGame(levelId)
   })
   card.appendChild(playBtn)
 
@@ -260,8 +303,7 @@ function renderWardrobe(): void {
   wrap.appendChild(characterLabel)
 
   const characterSwitcher = div('wardrobe-character-switcher')
-  const characters: Character[] = ['boy', 'girl', 'cat']
-  for (const ch of characters) {
+  for (const ch of availableCharacters()) {
     const miniCard = div(`wardrobe-mini-card${ch === wardrobeCharacter ? ' wardrobe-mini-card--active' : ''}`)
     miniCard.setAttribute('role', 'button')
     miniCard.setAttribute('tabindex', '0')
@@ -299,7 +341,20 @@ function renderWardrobe(): void {
     name.textContent = t(reward.nameKey)
     item.appendChild(name)
 
-    if (unlocked) {
+    if (!unlocked) {
+      const lock = el('span', 'lock-icon')
+      lock.textContent = '🔒'
+      item.appendChild(lock)
+
+      const hint = el('span', 'reward-hint')
+      hint.textContent = t(reward.hintKey)
+      item.appendChild(hint)
+    } else if (reward.equippable === false) {
+      // Character-unlock rewards (e.g. playable bear): no equip toggle.
+      const status = el('span', 'reward-hint')
+      status.textContent = t('wardrobe.unlocked')
+      item.appendChild(status)
+    } else {
       const equipped = save.equippedRewards.includes(reward.id)
       const toggle = el('button', 'reward-toggle') as HTMLButtonElement
       toggle.textContent = equipped ? '✓' : '○'
@@ -315,14 +370,6 @@ function renderWardrobe(): void {
         renderScreen('wardrobe')
       })
       item.appendChild(toggle)
-    } else {
-      const lock = el('span', 'lock-icon')
-      lock.textContent = '🔒'
-      item.appendChild(lock)
-
-      const hint = el('span', 'reward-hint')
-      hint.textContent = t(reward.hintKey)
-      item.appendChild(hint)
     }
 
     list.appendChild(item)

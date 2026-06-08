@@ -17,9 +17,16 @@ export const JUMP_GRAVITY = 1800
 // Airborne above this height clears a jumpable obstacle.
 export const JUMP_CLEAR_HEIGHT = 26
 
-export type Character = 'boy' | 'girl' | 'cat'
+export type Character = 'boy' | 'girl' | 'cat' | 'bear'
 
-export type RewardId = 'dragon-tail' | 'labubu' | 'cat-pet'
+export type RewardId =
+  | 'dragon-tail'
+  | 'labubu'
+  | 'cat-pet'
+  | 'bear-cub'
+  | 'kroj'
+  | 'squirrel'
+  | 'playable-bear'
 
 export interface SaveData {
   version: number
@@ -45,10 +52,18 @@ export interface InputState {
   jumpQueued: boolean
 }
 
-export type ObstacleKind = 'stall' | 'wall' | 'walker' | 'carrier' | 'firecracker'
+export type ObstacleKind =
+  | 'stall'
+  | 'wall'
+  | 'walker'
+  | 'carrier'
+  | 'firecracker'
+  | 'gorge-wall'
+  | 'ladder'
 
 // Low, ground-level obstacles the player can leap over. Tall barriers
-// (stalls/walls) and pedestrians (walkers/carriers) must still be dodged.
+// (stalls/walls/gorge rock faces) and pedestrians (walkers/carriers) must
+// still be dodged. Ladders are decorative gap markers (harmless).
 export function isJumpable(kind: ObstacleKind): boolean {
   return kind === 'firecracker'
 }
@@ -67,7 +82,13 @@ export interface Obstacle {
   timer?: number
 }
 
-export type CollectibleKind = 'noodles' | 'baozi' | 'tea'
+export type CollectibleKind =
+  | 'noodles'
+  | 'baozi'
+  | 'tea'
+  | 'halusky'
+  | 'pstruh'
+  | 'cucoriedky'
 
 export interface Collectible {
   kind: CollectibleKind
@@ -98,6 +119,10 @@ export interface GameState {
   obstacles: Obstacle[]
   collectibles: Collectible[]
   maxScore: number
+  // When true a chasing bear renders behind the player and "catches" them on
+  // game over (Slovak Paradise). Purely a render-side flag — lives/scoring are
+  // unchanged from the standard model.
+  chaser: boolean
   distance: number
   speed: number
   lives: number
@@ -118,6 +143,7 @@ export function createGameState(
   collectibles: Collectible[],
   character: Character,
   equipped: RewardId[],
+  chaser: boolean = false,
 ): GameState {
   return {
     phase: 'running',
@@ -127,6 +153,7 @@ export function createGameState(
     obstacles,
     collectibles,
     maxScore: collectibles.reduce((sum, c) => sum + c.points, 0),
+    chaser,
     distance: 0,
     speed: BASE_SPEED,
     lives: STARTING_LIVES,

@@ -321,7 +321,9 @@ type FoodPaint =
   | { mode: 'twoTone'; vessel: number; contents: number; frac: number }
   | { mode: 'byNode'; colors: Record<string, number>; fallback: number }
 
-const FOOD_PAINT: Record<CollectibleKind, FoodPaint> = {
+// Only the China foods load Kenney models that need re-colouring; Slovak foods
+// are procedural geometry, so this map is partial.
+const FOOD_PAINT: Partial<Record<CollectibleKind, FoodPaint>> = {
   // White ceramic bowl with warm noodle broth on top.
   noodles: { mode: 'twoTone', vessel: 0xf2efe9, contents: 0xe6b25a, frac: 0.6 },
   // Pale celadon cup with green tea.
@@ -359,6 +361,7 @@ function paintTwoTone(
 
 function paintModel(instance: THREE.Group, kind: CollectibleKind, mats: THREE.Material[]): void {
   const paint = FOOD_PAINT[kind]
+  if (!paint) return
   instance.traverse((obj) => {
     if (!(obj instanceof THREE.Mesh)) return
     if (paint.mode === 'twoTone') {
@@ -422,7 +425,8 @@ export function createEntities(scene: THREE.Scene, state: GameState): EntityPool
 
   const pool: EntityPool = { scene, obstacles, collectibles, geometries, materials, disposed: false }
 
-  const kinds: CollectibleKind[] = ['noodles', 'baozi', 'tea']
+  // Only these China foods have GLB models; they are both ModelName and CollectibleKind.
+  const kinds = ['noodles', 'baozi', 'tea'] as const
   for (const kind of kinds) {
     loadModel(kind).then((model) => {
       if (!model || pool.disposed) return

@@ -1,7 +1,8 @@
 import './cards.css'
 import { t } from '../i18n/strings'
+import { LevelDef } from '../levels/registry'
 
-export function showPreLevelCard(onStart: () => void): void {
+export function showPreLevelCard(level: LevelDef, onStart: () => void): void {
   const overlay = document.createElement('div')
   overlay.className = 'card-overlay'
 
@@ -10,15 +11,15 @@ export function showPreLevelCard(onStart: () => void): void {
 
   const flag = document.createElement('div')
   flag.className = 'card-flag'
-  flag.textContent = '🇨🇳'
+  flag.textContent = level.flag
 
   const title = document.createElement('h2')
   title.className = 'card-title'
-  title.textContent = t('card.china-wall.title')
+  title.textContent = t(level.cardTitleKey)
 
   const fact = document.createElement('p')
   fact.className = 'card-fact'
-  fact.textContent = t('card.china-wall.fact')
+  fact.textContent = t(level.cardFactKey)
 
   const startBtn = document.createElement('button')
   startBtn.className = 'card-start-btn'

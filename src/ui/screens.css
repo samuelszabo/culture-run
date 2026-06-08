@@ -262,6 +262,59 @@
   transform-origin: bottom center;
 }
 
+.character-card--locked {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.character-figure--bear .char-head {
+  border-radius: 45% 45% 40% 40%;
+  background: #8a5a2b;
+}
+
+.character-figure--bear .char-body {
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 32px;
+  background: #6f4420;
+  border-radius: 6px;
+}
+
+.character-figure--bear .char-legs {
+  background: #5a3517;
+}
+
+.bear-ear {
+  position: absolute;
+  top: -6px;
+  width: 16px;
+  height: 16px;
+  background: #8a5a2b;
+  border-radius: 50%;
+}
+
+.bear-ear--left {
+  left: 6px;
+}
+
+.bear-ear--right {
+  right: 6px;
+}
+
+.bear-snout {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 14px;
+  background: #d9b483;
+  border-radius: 50%;
+}
+
 .country-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

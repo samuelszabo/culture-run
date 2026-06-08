@@ -17,10 +17,10 @@ import {
 import { t } from './i18n/strings'
 import { attachKeyboard } from './input/keyboard'
 import { attachTouch } from './input/touch'
-import { createChinaWallLevel } from './levels/china-wall'
+import { getLevel } from './levels/registry'
 import { EntityPool, createEntities, disposeEntities, updateEntities } from './render3d/entities'
 import { Player3D, createPlayer3D, disposePlayer3D, updatePlayer3D } from './render3d/player3d'
-import { LANDMARKS, createStage, renderStage, updateStage } from './render3d/scene'
+import { createStage, renderStage, setEnvironment, updateStage } from './render3d/scene'
 import { loadSave, persistSave, recordCollectedFood, recordLevelResult, recordLevelResultWithStars, recordSeenLandmark } from './storage/save'
 import { showPreLevelCard } from './ui/cards'
 import { hideHud, initHud, showHud, updateHud } from './ui/hud-dom'
@@ -31,7 +31,7 @@ import { hideScreens, initScreens, showHome } from './ui/screens'
 import { hasQuizForLevel, hideQuiz, isQuizOpen, showQuiz } from './ui/quiz-dom'
 import { REWARDS } from './game/rewards'
 
-const LEVEL_ID = 'china-wall'
+let currentLevelId = 'china-wall'
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
 const stage = createStage(canvas)
@@ -51,14 +51,19 @@ let currentRunStars = 0
 const LANDMARK_TRIGGER_AHEAD = 1800
 
 function bestScore(): number {
-  return save.bestScores[LEVEL_ID]?.score ?? 0
+  return save.bestScores[currentLevelId]?.score ?? 0
 }
 
 function newGame(): GameState {
-  const level = createChinaWallLevel()
-  return createGameState(level.obstacles, level.collectibles, save.character ?? 'boy', [
-    ...save.equippedRewards,
-  ])
+  const def = getLevel(currentLevelId)
+  const level = def.createLevel()
+  return createGameState(
+    level.obstacles,
+    level.collectibles,
+    save.character ?? 'boy',
+    [...save.equippedRewards],
+    def.chaser,
+  )
 }
 
 function disposeWorld(): void {
@@ -74,6 +79,7 @@ function startGame(): void {
   hideQuiz()
   hideLandmarkCaption()
   disposeWorld()
+  setEnvironment(stage, getLevel(currentLevelId).environmentId)
   state = newGame()
   entities = createEntities(stage.scene, state)
   player3d = createPlayer3D(stage.scene, state)
@@ -106,7 +112,10 @@ function screenToGameX(clientX: number): number {
 initHud()
 hideHud()
 initScreens(save, () => persistSave(save), {
-  onStartGame: () => showPreLevelCard(startGame),
+  onStartGame: (levelId: string) => {
+    currentLevelId = levelId
+    showPreLevelCard(getLevel(levelId), startGame)
+  },
 })
 attachKeyboard(input)
 attachTouch(canvas, input, screenToGameX)
@@ -144,7 +153,7 @@ function update(dt: number): void {
       state.phase = 'finished'
     }
 
-    for (const landmark of LANDMARKS) {
+    for (const landmark of getLevel(currentLevelId).landmarks) {
       if (landmarksShown.has(landmark.id)) continue
       if (state.distance >= landmark.trackY - LANDMARK_TRIGGER_AHEAD) {
         landmarksShown.add(landmark.id)
@@ -157,7 +166,7 @@ function update(dt: number): void {
   if (gameEnded() && state.endedAt === null) {
     state.endedAt = state.elapsed
     currentRunStars = computeStars(state.score, state.maxScore, state.phase === 'finished')
-    state.newRewards = recordLevelResult(save, LEVEL_ID, state.score, currentRunStars)
+    state.newRewards = recordLevelResult(save, currentLevelId, state.score, currentRunStars)
   }
 
   if (gameEnded() && !resultsShown) {
@@ -166,14 +175,14 @@ function update(dt: number): void {
     hideCollectToast()
 
     const finished = state.phase === 'finished'
-    const quizAvailable = finished && !quizTakenThisRun && hasQuizForLevel(LEVEL_ID)
+    const quizAvailable = finished && !quizTakenThisRun && hasQuizForLevel(currentLevelId)
 
     const capturedState = state
 
     function openQuiz(): void {
       quizTakenThisRun = true
       showQuiz(
-        LEVEL_ID,
+        currentLevelId,
         {
           onDone(bonus, _newRewardIds) {
             quizBonusEarned = bonus
@@ -183,6 +192,7 @@ function update(dt: number): void {
               { onRestart: startGame, onHome: goHome },
               quizBonusEarned,
               bestScore(),
+              getLevel(currentLevelId).resultsFactKey,
             )
           },
         },
@@ -190,7 +200,7 @@ function update(dt: number): void {
           // Record the bonus-inflated score; stars are the original base-run stars (unchanged)
           const newlyUnlocked = recordLevelResultWithStars(
             save,
-            LEVEL_ID,
+            currentLevelId,
             capturedState.score + bonus,
             currentRunStars,
           )
@@ -212,6 +222,7 @@ function update(dt: number): void {
       },
       undefined,
       bestScore(),
+      getLevel(currentLevelId).resultsFactKey,
     )
   }
 }

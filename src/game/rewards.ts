@@ -6,6 +6,8 @@ export interface Reward {
   hintKey: string
   levelId?: string
   scoreThreshold?: number
+  // false = unlock only (e.g. a playable character); not shown with an equip toggle.
+  equippable?: boolean
 }
 
 export const REWARDS: Reward[] = [
@@ -26,5 +28,31 @@ export const REWARDS: Reward[] = [
     nameKey: 'reward.cat-pet',
     hintKey: 'reward.cat-pet.hint',
     scoreThreshold: 810,
+  },
+  // ── Slovenský raj ──────────────────────────────────────────
+  {
+    id: 'bear-cub',
+    nameKey: 'reward.bear-cub',
+    hintKey: 'reward.bear-cub.hint',
+    levelId: 'slovak-paradise',
+  },
+  {
+    id: 'squirrel',
+    nameKey: 'reward.squirrel',
+    hintKey: 'reward.squirrel.hint',
+    scoreThreshold: 750,
+  },
+  {
+    id: 'kroj',
+    nameKey: 'reward.kroj',
+    hintKey: 'reward.kroj.hint',
+    scoreThreshold: 950,
+  },
+  {
+    id: 'playable-bear',
+    nameKey: 'reward.playable-bear',
+    hintKey: 'reward.playable-bear.hint',
+    scoreThreshold: 1050,
+    equippable: false,
   },
 ]

@@ -49,4 +49,47 @@ export const ALBUM_ENTRIES: AlbumEntry[] = [
     factKey: 'landmark.lion.fact',
     icon: '🦁',
   },
+  // ── Slovenský raj ──────────────────────────────────────────
+  {
+    id: 'halusky',
+    category: 'food',
+    nameKey: 'food.halusky.name',
+    factKey: 'album.halusky.fact',
+    icon: '🥔',
+  },
+  {
+    id: 'pstruh',
+    category: 'food',
+    nameKey: 'food.pstruh.name',
+    factKey: 'album.pstruh.fact',
+    icon: '🐟',
+  },
+  {
+    id: 'cucoriedky',
+    category: 'food',
+    nameKey: 'food.cucoriedky.name',
+    factKey: 'album.cucoriedky.fact',
+    icon: '🫐',
+  },
+  {
+    id: 'gorge',
+    category: 'landmark',
+    nameKey: 'landmark.gorge',
+    factKey: 'landmark.gorge.fact',
+    icon: '🪜',
+  },
+  {
+    id: 'waterfall',
+    category: 'landmark',
+    nameKey: 'landmark.waterfall',
+    factKey: 'landmark.waterfall.fact',
+    icon: '💧',
+  },
+  {
+    id: 'viewpoint',
+    category: 'landmark',
+    nameKey: 'landmark.viewpoint',
+    factKey: 'landmark.viewpoint.fact',
+    icon: '⛰️',
+  },
 ]
