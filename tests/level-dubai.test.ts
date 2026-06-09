@@ -31,7 +31,7 @@ describe('Burj Khalifa (Dubai) level data', () => {
 
   it('cloud-gaps span the full road, are jumpable and deadly', () => {
     const gaps = lvl.obstacles.filter((o) => o.kind === 'cloud-gap')
-    expect(gaps.length).toBeGreaterThan(15)
+    expect(gaps.length).toBeGreaterThan(6)
     for (const g of gaps) {
       expect(g.w).toBe(ROAD_RIGHT - ROAD_LEFT)
       expect(g.harmless).toBeFalsy()
@@ -71,15 +71,17 @@ describe('Burj Khalifa (Dubai) level data', () => {
       state.speed = BASE_SPEED * (1 + 0.3 * Math.min(1, state.distance / TRACK_LENGTH))
 
       // Steer: hug the open lane when a tower is approaching, else run centre.
-      // Hold the open lane until the tower is fully behind us — its collision
-      // window reaches ~one body-length past the player, so releasing early
-      // (drifting back to centre) would clip the tail of the tower.
+      // Dodge the NEAREST not-yet-passed tower (smallest `ahead`): with the
+      // dense skyline several towers can be in view at once, so steer for the
+      // most imminent one. Its collision window reaches ~one body-length past
+      // the player, so we keep holding until it is fully behind.
       let targetX = center
+      let bestAhead = Infinity
       for (const tw of towers) {
         const ahead = tw.trackY - state.distance
-        if (ahead > -(tw.h + 40) && ahead < 360) {
+        if (ahead > -(tw.h + 5) && ahead < 360 && ahead < bestAhead) {
+          bestAhead = ahead
           targetX = tw.x < center ? ROAD_RIGHT - 60 : ROAD_LEFT + 60
-          break
         }
       }
       input.touchTargetX = targetX

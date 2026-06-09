@@ -55,16 +55,16 @@ function createCloudFeatures(): Features {
 
   while (trackY <= FEATURE_END) {
     const progress = (trackY - FEATURE_START) / (FEATURE_END - FEATURE_START)
-    // 560 → 320 px between features. A jump's airborne arc covers ~150–190px of
-    // forward travel, so even the tightest spacing leaves time to land, run a
-    // step and jump the next gap.
-    const spacing = 560 - progress * 240
-    trackY += spacing + (rand() - 0.5) * 60
+    // 360 → 250 px between features — a dense, busy skyline of obstacles. A jump's
+    // airborne arc covers ~150–190px of forward travel and a lane-swap takes only
+    // ~80px, so even the tightest spacing stays clearable.
+    const spacing = 360 - progress * 110
+    trackY += spacing + (rand() - 0.5) * 40
     if (trackY > FEATURE_END) break
 
-    // No towers in the opening teaching zone; after that roughly half the
-    // features are skyscraper tops to dodge (the rest are jump-gaps).
-    const towerChance = progress < 0.12 ? 0 : 0.55
+    // No towers in the short opening teaching zone; after that the track is mostly
+    // skyscraper tops to dodge, with the occasional jump-gap.
+    const towerChance = progress < 0.1 ? 0 : 0.85
     if (rand() < towerChance) {
       towerSide = -towerSide
       const cx =

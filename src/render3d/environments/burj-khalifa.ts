@@ -132,7 +132,7 @@ function buildSunAndSkyline(parent: THREE.Object3D): void {
   // both far sides of the track. Tall thin silhouettes.
   const nearMat = new THREE.MeshLambertMaterial({ color: SKYLINE_COLOR, flatShading: true })
   const farMat = new THREE.MeshLambertMaterial({ color: SKYLINE_FAR, flatShading: true })
-  const towerCount = QUALITY_TIER === 'low' ? 40 : 70
+  const towerCount = QUALITY_TIER === 'low' ? 56 : 96
   for (let i = 0; i < towerCount; i++) {
     const far = rng() > 0.5
     const side = rng() > 0.5 ? 1 : -1
@@ -161,10 +161,10 @@ function buildCitySkyline(parent: THREE.Object3D): void {
   const litMat = new THREE.MeshLambertMaterial({ color: 0xcfe2f0, flatShading: true })
   const spireMat = new THREE.MeshBasicMaterial({ color: 0xdfeaf4 })
 
-  const count = QUALITY_TIER === 'low' ? 18 : 34
+  const count = QUALITY_TIER === 'low' ? 30 : 54
   for (let i = 0; i < count; i++) {
     const side = rng() > 0.5 ? 1 : -1
-    const x = side * (ROAD_HALF + 5 + rng() * 14)
+    const x = side * (ROAD_HALF + 3.5 + rng() * 16)
     const z = TRACK_Z_START - rng() * (TRACK_LENGTH_WORLD + 40)
     const h = 8 + rng() * 18
     const w = 1.4 + rng() * 2.4
