@@ -1,5 +1,4 @@
 import {
-  COLLECTIBLE_SIZE,
   Collectible,
   CollectibleKind,
   Obstacle,
@@ -101,33 +100,39 @@ const PICKUP_POINTS = 15
 // thresholds line up across levels. Asserted in tests/level-dubai.test.ts.
 const PICKUP_TARGET = 72
 
-const HALF = COLLECTIBLE_SIZE / 2
-// A loose left↔right weave plus random jitter — the food scatters across the
-// cloud road rather than tracing a clean zig-zag, so it feels organic.
-const WEAVE_AMP = 115
-const WEAVE_JITTER = 70
-
+// Food sits in a tidy trail along the navigable path — like the China/Slovak
+// levels — not scattered across the road. Lateral position is always the safe
+// lane (centre, or the open lane beside a tower). Spacing alternates between
+// single pickups and short tight clusters so the trail reads naturally.
 function createCloudCollectibles(towers: Obstacle[]): Collectible[] {
   const rand = mulberry32(0x5eed42)
   const collectibles: Collectible[] = []
   let trackY = 1500
   let i = 0
+  let inCluster = 0
   while (trackY <= 18500 && collectibles.length < PICKUP_TARGET) {
-    // Base sine weave, nudged by random jitter so the line isn't perfectly regular.
-    let x = ROAD_CENTER + WEAVE_AMP * Math.sin(i * 0.8) + (rand() - 0.5) * 2 * WEAVE_JITTER
-    // Near a tower-top, snap onto the guaranteed-open lane so the pickup is never
-    // buried inside the skyscraper.
-    const lane = safeXAt(trackY, towers)
-    if (lane !== ROAD_CENTER) x = lane
-    x = Math.max(ROAD_LEFT + HALF, Math.min(ROAD_RIGHT - HALF, x))
-    // Mostly cycle the three foods, occasionally pick at random for variety.
-    const kind =
-      rand() < 0.3
-        ? FOOD_KINDS[Math.floor(rand() * FOOD_KINDS.length)]
-        : FOOD_KINDS[i % FOOD_KINDS.length]
-    collectibles.push({ kind, x, trackY, points: PICKUP_POINTS, collected: false })
-    trackY += 160 + rand() * 80
+    const x = safeXAt(trackY, towers)
+    collectibles.push({
+      kind: FOOD_KINDS[i % FOOD_KINDS.length],
+      x,
+      trackY,
+      points: PICKUP_POINTS,
+      collected: false,
+    })
     i++
+
+    if (inCluster > 0) {
+      // Continue a tight run of pickups (China's tea-row feel).
+      inCluster--
+      trackY += 60
+    } else if (rand() < 0.35) {
+      // Start a short cluster of 2–3 more.
+      inCluster = 2 + Math.floor(rand() * 2)
+      trackY += 60
+    } else {
+      // Normal gap to the next single pickup.
+      trackY += 230
+    }
   }
   return collectibles
 }

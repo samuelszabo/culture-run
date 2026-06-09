@@ -132,7 +132,7 @@ function buildSunAndSkyline(parent: THREE.Object3D): void {
   // both far sides of the track. Tall thin silhouettes.
   const nearMat = new THREE.MeshLambertMaterial({ color: SKYLINE_COLOR, flatShading: true })
   const farMat = new THREE.MeshLambertMaterial({ color: SKYLINE_FAR, flatShading: true })
-  const towerCount = 26
+  const towerCount = QUALITY_TIER === 'low' ? 40 : 70
   for (let i = 0; i < towerCount; i++) {
     const far = rng() > 0.5
     const side = rng() > 0.5 ? 1 : -1
@@ -146,6 +146,54 @@ function buildSunAndSkyline(parent: THREE.Object3D): void {
     // Sit base below the cloud line so only the top shows above the sea.
     tower.position.set(x, -1.6 + h / 2 - 1.5, z)
     parent.add(tower)
+  }
+}
+
+// ─── 3b. A nearer Dubai skyline rising from the cloud sea beside the track ─────
+// Bigger, glassier skyscraper tops poking up just off both sides of the road
+// (well outside it — scenery, not obstacles), so you run through a city in the
+// clouds. Shapes vary: tapered body + lit setback + occasional antenna spire.
+function buildCitySkyline(parent: THREE.Object3D): void {
+  const rng = makeLCG(173)
+  const glassMats = [0x6f97bd, 0x7fa8c8, 0x8fb6d2, 0x5f87ad, 0xa9905f].map(
+    (c) => new THREE.MeshLambertMaterial({ color: c, flatShading: true }),
+  )
+  const litMat = new THREE.MeshLambertMaterial({ color: 0xcfe2f0, flatShading: true })
+  const spireMat = new THREE.MeshBasicMaterial({ color: 0xdfeaf4 })
+
+  const count = QUALITY_TIER === 'low' ? 18 : 34
+  for (let i = 0; i < count; i++) {
+    const side = rng() > 0.5 ? 1 : -1
+    const x = side * (ROAD_HALF + 5 + rng() * 14)
+    const z = TRACK_Z_START - rng() * (TRACK_LENGTH_WORLD + 40)
+    const h = 8 + rng() * 18
+    const w = 1.4 + rng() * 2.4
+    const baseSink = 2 + rng() * 2
+
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, w),
+      glassMats[Math.floor(rng() * glassMats.length)],
+    )
+    const bodyY = -baseSink + h / 2 - 1.5
+    body.position.set(x, bodyY, z)
+    parent.add(body)
+
+    // Lighter setback block on top (glass catching the sun).
+    const uh = h * 0.28
+    const uw = w * 0.62
+    const upper = new THREE.Mesh(new THREE.BoxGeometry(uw, uh, uw), litMat)
+    upper.position.set(x, bodyY + h / 2 + uh / 2, z)
+    parent.add(upper)
+
+    // Some towers get a slender antenna.
+    if (rng() > 0.5) {
+      const spire = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.12, h * 0.3, 5),
+        spireMat,
+      )
+      spire.position.set(x, upper.position.y + uh / 2 + h * 0.15, z)
+      parent.add(spire)
+    }
   }
 }
 
@@ -295,6 +343,7 @@ export function buildBurjKhalifaEnvironment(parent: THREE.Object3D): void {
   buildCloudSea(parent, TREE_DENSITY)
   buildCloudRoad(parent, TREE_DENSITY)
   buildSunAndSkyline(parent)
+  buildCitySkyline(parent)
   buildRainbows(parent)
   buildLandmarks(parent)
 }
