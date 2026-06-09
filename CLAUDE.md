@@ -66,3 +66,5 @@ Facts shown to players (food names on pickup, landmark captions, album facts, qu
 ## Docker
 
 `make claude` / `Dockerfile.claude` run Claude Code in a container mounting the repo — for the maintainer's automated workflow, not part of the app build.
+
+The image ships headless Chromium + Playwright for visual debugging. `node scripts/shot.mjs` boots the preview, drives the menu to a target, screenshots it, and prints console errors — e.g. `TARGET=climb node scripts/shot.mjs` or `TARGET=china OUT=/tmp/cn.png node scripts/shot.mjs` (env: `TARGET` home|china|slovak|climb, `OUT`, `WAIT`, `SHOTS`, `INTERVAL`, `CHAR`). Read the resulting PNG to inspect the running game.
