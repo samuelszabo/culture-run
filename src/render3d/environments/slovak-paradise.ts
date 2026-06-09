@@ -10,33 +10,40 @@ import { TREE_DENSITY, QUALITY_TIER } from '../quality'
 import { getLevel } from '../../levels/registry'
 
 // ─── Palette ────────────────────────────────────────────────────────────────
-const PATH_COLOR        = 0x8a7a5a   // earthy stone/dirt
-const TERRAIN_DIRT      = 0x6f5c3f   // trough/lowland dirt
-const TERRAIN_GRASS_LO  = 0x3f6b2f   // lower hillside grass
-const TERRAIN_GRASS_HI  = 0x4a7a38   // brighter mid-grass
-const TERRAIN_ROCK      = 0x6b6258   // high/steep rock
-const CLIFF_STRATA_A    = 0x6b6258   // warm grey rock
-const CLIFF_STRATA_B    = 0x5a5048   // darker rock crevice
-const CLIFF_STRATA_C    = 0x7a6e63   // lighter rock face
-const CLIFF_STRATA_D    = 0x4e4840   // very dark shadow band
-const WATER_COLOR       = 0x6fa8c0   // gorge brook blue
+const PATH_COLOR        = 0x9a8a6a   // earthy stone/dirt trail
+const TERRAIN_DIRT      = 0x5a8a38   // verge — bright grassy green
+const TERRAIN_GRASS_LO  = 0x4a8228   // lower hillside grass — saturated green
+const TERRAIN_GRASS_HI  = 0x5a9a38   // brighter mid-grass
+const TERRAIN_ROCK      = 0x7a7268   // high/steep rock
+const CLIFF_STRATA_A    = 0x7a7268   // warm grey rock
+const CLIFF_STRATA_B    = 0x6a6258   // darker rock crevice
+const CLIFF_STRATA_C    = 0x8a7e73   // lighter rock face
+const CLIFF_STRATA_D    = 0x5e5850   // shadow band
+const WATER_COLOR       = 0x55c0e8   // vivid gorge brook blue-cyan
 const SPLASH_COLOR      = 0xd8eef5   // waterfall white-blue
-const TRUNK_COLOR       = 0x4a3520   // dark conifer trunk
-const FOLIAGE_COLORS    = [0x2f5d34, 0x35663a, 0x29502f, 0x3d6e40]
-const BUSH_COLORS       = [0x3a6b2a, 0x2f5a24, 0x437030, 0x3d6530]
+const TRUNK_COLOR       = 0x3a2810   // dark conifer trunk
+const FOLIAGE_COLORS    = [0x2d6830, 0x367a38, 0x265828, 0x427840, 0x3a7035, 0x2e6030]
+const BUSH_COLORS       = [0x3a7a28, 0x2f6820, 0x487835, 0x4a7232]
 const BOULDER_COLOR_A   = 0x7a7268
 const BOULDER_COLOR_B   = 0x60584f
-const SCREE_COLOR       = 0x726860   // small loose rock fragments
-const MOUNTAIN_COLOR    = 0x6e8a7a   // cool grey-green
+const SCREE_COLOR       = 0x726860
+const MOUNTAIN_COLOR_A  = 0x5a7a65   // blue-grey-green near
+const MOUNTAIN_COLOR_B  = 0x6e8fa0   // cool blue-grey far
 const LANDMARK_ROCK     = 0x6a6258
 const LANDMARK_DARK     = 0x4e4840
-const WOOD_COLOR        = 0x8b6340   // ladder/rung wood
-const SKY_HORIZON       = 0xbcd6df   // matches fog / sky bg
-const SKY_ZENITH        = 0x7ab0c8   // deeper blue at top
+const WOOD_COLOR        = 0x8b6340
+const SKY_HORIZON       = 0xa8cfe0   // matches fog / sky bg
+const SKY_ZENITH        = 0x5a9ec8   // deeper blue at top
+const MOSS_COLOR        = 0x4a7830   // mossy rock green
+const FLOWER_COLORS     = [0xf5e060, 0xe8a030, 0xf0f0f0, 0xd070c0, 0x80c040]
+const FERN_COLOR        = 0x3a7228   // deep fern green
+const LOG_COLOR         = 0x6b4a2a   // fallen log brown
 
-const DECK_WIDTH  = ROAD_WORLD_WIDTH + 0.4
-// Outside edge of the road (railing inner face) — scenery must start beyond this
+// Road half-width + railing position (where scenery begins)
 const RAILING_X   = ROAD_WORLD_WIDTH / 2 + 0.35
+// Cliff setback — cliffs start this far from railing, giving open space
+const CLIFF_SETBACK = 3.5
+const CLIFF_X_BASE  = RAILING_X + CLIFF_SETBACK
 
 // ─── Water animation handle (exported so scene.ts can animate per-frame) ────
 export interface WaterEntry {
@@ -60,9 +67,7 @@ function makeLCG(seed: number): () => number {
 }
 
 // ─── Value noise (deterministic, no dependencies) ───────────────────────────
-// Simple 1D lattice value noise used to displace terrain heights.
 function valueNoise2D(x: number, z: number, seed: number): number {
-  // hash two integers into a float in [0,1]
   function hash2(ix: number, iz: number): number {
     let h = (ix * 374761393 + iz * 668265263 + seed) | 0
     h = Math.imul(h ^ (h >>> 13), 1274126177)
@@ -73,14 +78,11 @@ function valueNoise2D(x: number, z: number, seed: number): number {
   const iz0 = Math.floor(z)
   const fx = x - ix0
   const fz = z - iz0
-  // smooth step
   const ux = fx * fx * (3 - 2 * fx)
   const uz = fz * fz * (3 - 2 * fz)
-  const v00 = hash2(ix0,     iz0)
-  const v10 = hash2(ix0 + 1, iz0)
-  const v01 = hash2(ix0,     iz0 + 1)
-  const v11 = hash2(ix0 + 1, iz0 + 1)
-  return v00 + (v10 - v00) * ux + (v01 - v00) * uz + (v11 - v10 - v01 + v00) * ux * uz
+  return hash2(ix0, iz0) + (hash2(ix0 + 1, iz0) - hash2(ix0, iz0)) * ux
+    + (hash2(ix0, iz0 + 1) - hash2(ix0, iz0)) * uz
+    + (hash2(ix0 + 1, iz0 + 1) - hash2(ix0 + 1, iz0) - hash2(ix0, iz0 + 1) + hash2(ix0, iz0)) * ux * uz
 }
 
 function fbm2D(x: number, z: number, seed: number, octaves: number): number {
@@ -108,22 +110,34 @@ function lerpColor(
   return [a[0] + (b[0] - a[0]) * tc, a[1] + (b[1] - a[1]) * tc, a[2] + (b[2] - a[2]) * tc]
 }
 
-// ─── 1. Path / ground strip ──────────────────────────────────────────────────
+// ─── 1. Path / ground strip + green verge ────────────────────────────────────
 function buildPath(parent: THREE.Object3D): void {
-  const geo = new THREE.BoxGeometry(DECK_WIDTH, 0.18, TRACK_LENGTH_WORLD)
+  // Earthy trail
+  const geo = new THREE.BoxGeometry(ROAD_WORLD_WIDTH + 0.4, 0.18, TRACK_LENGTH_WORLD)
   const mat = new THREE.MeshLambertMaterial({ color: PATH_COLOR })
   const mesh = new THREE.Mesh(geo, mat)
   mesh.position.set(0, -0.09, TRACK_Z_CENTER)
   parent.add(mesh)
+
+  // Green verge strips right alongside the path railing — clearly visible in foreground
+  const vergeW = CLIFF_X_BASE - RAILING_X - 0.1
+  const vergeGeo = new THREE.BoxGeometry(vergeW, 0.10, TRACK_LENGTH_WORLD)
+  const vergeMat = new THREE.MeshLambertMaterial({ color: TERRAIN_DIRT })
+  for (const side of [-1, 1] as const) {
+    const verge = new THREE.Mesh(vergeGeo, vergeMat)
+    verge.position.set(side * (RAILING_X + vergeW / 2 + 0.05), -0.1, TRACK_Z_CENTER)
+    parent.add(verge)
+  }
 }
 
-// ─── 2. Rolling vertex-colored canyon terrain ────────────────────────────────
+// ─── 2. Rolling vertex-colored gorge terrain — wider, greener ─────────────────
 function buildTerrain(parent: THREE.Object3D): void {
   const isHigh = QUALITY_TIER !== 'low'
-  const segX = isHigh ? 48 : 24
-  const segZ = isHigh ? 140 : 80
-  const totalW = 160
-  const totalD = TRACK_LENGTH_WORLD + 40
+  const segX = isHigh ? 56 : 28
+  const segZ = isHigh ? 160 : 90
+  // Make terrain much wider so it extends behind the cliffs and shows slope
+  const totalW = 240
+  const totalD = TRACK_LENGTH_WORLD + 60
 
   const geo = new THREE.PlaneGeometry(totalW, totalD, segX, segZ)
   geo.rotateX(-Math.PI / 2)
@@ -131,48 +145,52 @@ function buildTerrain(parent: THREE.Object3D): void {
   const pos = geo.attributes.position as THREE.BufferAttribute
   const vCount = pos.count
 
-  // Canyon corridor half-width in world units (keep flat near road)
-  const corridorHW = ROAD_WORLD_WIDTH / 2 + 2.0
+  // Keep flat near road, ramp up for slopes beyond cliff setback
+  const corridorHW = ROAD_WORLD_WIDTH / 2 + 1.0
+  // Where the slope starts rising (beyond cliff base)
+  const slopeStart = CLIFF_X_BASE + 1.0
+  const slopeWidth = 18.0   // width over which the hill rises
 
-  // Vertex colours
   const colArr = new Float32Array(vCount * 3)
-  const colDirt = hexToRGB01(TERRAIN_DIRT)
+  const colDirt   = hexToRGB01(TERRAIN_DIRT)
   const colGrassLo = hexToRGB01(TERRAIN_GRASS_LO)
   const colGrassHi = hexToRGB01(TERRAIN_GRASS_HI)
-  const colRock = hexToRGB01(TERRAIN_ROCK)
+  const colRock   = hexToRGB01(TERRAIN_ROCK)
 
   for (let i = 0; i < vCount; i++) {
     const wx = pos.getX(i)
     const wz = pos.getZ(i)
 
-    // Noise-based base height
-    const noiseVal = fbm2D(wx * 0.18, wz * 0.06, 3701, isHigh ? 4 : 3)
-
-    // Canyon trough: clamp low near path, ramp up laterally
+    const noiseVal = fbm2D(wx * 0.14, wz * 0.05, 3701, isHigh ? 4 : 3)
     const absX = Math.abs(wx)
-    const lateralT = Math.max(0, (absX - corridorHW) / 6.0)   // 0 at corridor edge → 1 at +6u
-    const clampedT = Math.min(1, lateralT)
-    const canyonRamp = clampedT * clampedT * 6.0               // quadratic ramp, up to 6u tall
 
-    const h = canyonRamp * noiseVal + canyonRamp * 0.4 - 1.3   // base at -1.3
+    let h: number
+    let c: [number, number, number]
+
+    if (absX <= corridorHW) {
+      // Flat trail verge — slightly below path level, mossy green
+      h = -1.1 + noiseVal * 0.10
+      c = lerpColor(colGrassLo, colDirt, 0.3 + noiseVal * 0.3)
+    } else if (absX <= slopeStart) {
+      // Gentle slope from railing to cliff base — lush grassy bank
+      const t = (absX - corridorHW) / (slopeStart - corridorHW)
+      h = -1.1 + t * 0.7 + noiseVal * 0.25
+      c = lerpColor(colGrassLo, colGrassHi, t)
+    } else {
+      // Forested hillside rising behind cliffs
+      const t = Math.min(1, (absX - slopeStart) / slopeWidth)
+      const quadT = t * t
+      h = -0.5 + quadT * 10.0 * (0.7 + noiseVal * 0.5) + noiseVal * 0.6
+      if (h < 2.0) {
+        c = lerpColor(colGrassHi, colGrassLo, noiseVal * 0.5)
+      } else if (h < 5.0) {
+        c = lerpColor(colGrassHi, colRock, (h - 2.0) / 3.0 * 0.4)
+      } else {
+        c = lerpColor(colRock, hexToRGB01(0x888880), (h - 5.0) / 6.0)
+      }
+    }
 
     pos.setY(i, h)
-
-    // Color by height + slope proxy (lateralT as cliff-steepness proxy)
-    let c: [number, number, number]
-    if (lateralT < 0.05) {
-      c = colDirt
-    } else if (lateralT < 0.4) {
-      c = lerpColor(colDirt, colGrassLo, (lateralT - 0.05) / 0.35)
-    } else if (lateralT < 0.75) {
-      c = lerpColor(colGrassLo, colGrassHi, (lateralT - 0.4) / 0.35)
-    } else {
-      c = lerpColor(colGrassHi, colRock, Math.min(1, (lateralT - 0.75) / 0.35))
-    }
-    // Darken very steep/high spots
-    const heightT = Math.max(0, Math.min(1, (h + 1.3) / 5.0))
-    if (heightT > 0.6) c = lerpColor(c, colRock, (heightT - 0.6) / 0.4)
-
     colArr[i * 3]     = c[0]
     colArr[i * 3 + 1] = c[1]
     colArr[i * 3 + 2] = c[2]
@@ -187,19 +205,16 @@ function buildTerrain(parent: THREE.Object3D): void {
   parent.add(mesh)
 }
 
-// ─── 3. Gorge cliff walls — single instanced mesh with vertex-color strata ────
+// ─── 3. Low gorge cliff walls — shorter, stepped back, varying height ─────────
 function buildCliffWalls(parent: THREE.Object3D): void {
   const rng = makeLCG(7)
 
-  const slabSpacing = 1.8
+  const slabSpacing = 2.4
   const countPerSide = Math.floor(TRACK_LENGTH_WORLD / slabSpacing)
 
-  // Build ONE banded slab base geometry (subdivided box, flatShading, vertex colors)
-  // Subdivisions give us horizontal strata bands + slight silhouette variation.
-  const SUBDIV_Y = 6  // strata bands
+  const SUBDIV_Y = 5
   const baseGeo = new THREE.BoxGeometry(1, 1, 1, 1, SUBDIV_Y, 1)
 
-  // Assign strata vertex colors
   const strataColors: [number, number, number][] = [
     hexToRGB01(CLIFF_STRATA_A),
     hexToRGB01(CLIFF_STRATA_B),
@@ -210,8 +225,7 @@ function buildCliffWalls(parent: THREE.Object3D): void {
   const bCount = bPos.count
   const bColArr = new Float32Array(bCount * 3)
   for (let i = 0; i < bCount; i++) {
-    const vy = bPos.getY(i)  // in [-0.5, 0.5] (unit box)
-    // 4 bands cycling through strata colours
+    const vy = bPos.getY(i)
     const band = Math.floor((vy + 0.5) * SUBDIV_Y) % strataColors.length
     const sc = strataColors[Math.abs(band) % strataColors.length]
     bColArr[i * 3]     = sc[0]
@@ -227,16 +241,30 @@ function buildCliffWalls(parent: THREE.Object3D): void {
 
   const dummy = new THREE.Object3D()
   let idx = 0
+
   for (let side = -1; side <= 1; side += 2) {
     for (let i = 0; i < countPerSide; i++) {
       const z = TRACK_Z_START - i * slabSpacing - slabSpacing / 2
-      const height  = 4.0 + rng() * 4.0
-      const depth   = slabSpacing * 0.95 + rng() * 0.1
-      const width   = 0.9 + rng() * 0.6
-      const xOffset = RAILING_X + width / 2 + rng() * 0.4
-      dummy.position.set(side * xOffset, height / 2 - 0.2, z)
+      // Lots of variation: short boulders (0.8–2.0), with occasional taller (2.5–3.5)
+      // More frequent gaps every 6-7 slabs so light and forest peek through
+      const gapPhase = i % 7
+      const isLowGap  = (gapPhase === 3)   // one very low slab per 7 — gap
+      const isTallPeak = (gapPhase === 0 || gapPhase === 6) && rng() > 0.5  // occasional taller rock
+      const height = isLowGap
+        ? 0.4 + rng() * 0.5                         // very low stub (almost flat)
+        : isTallPeak
+          ? 2.5 + rng() * 1.2                        // tall rocky peak
+          : 0.8 + rng() * 1.4                        // mostly short-medium
+      const depth  = slabSpacing * 0.85 + rng() * 0.25
+      const width  = 0.8 + rng() * 1.0
+
+      // Vary setback more — some slabs well back, creating visual depth
+      const xSetback = CLIFF_X_BASE + rng() * 2.5
+      const xOffset  = xSetback + width / 2
+
+      dummy.position.set(side * xOffset, height / 2 - 0.5, z)
       dummy.scale.set(width, height, depth)
-      dummy.rotation.set(0, rng() * 0.08 - 0.04, 0)  // slight yaw variation
+      dummy.rotation.set(0, rng() * 0.15 - 0.075, 0)
       dummy.updateMatrix()
       im.setMatrixAt(idx++, dummy.matrix)
     }
@@ -248,7 +276,7 @@ function buildCliffWalls(parent: THREE.Object3D): void {
 // ─── 3b. Scree — loose rocks at cliff feet ───────────────────────────────────
 function buildScree(parent: THREE.Object3D, density: number): void {
   const rng = makeLCG(53)
-  const count = Math.max(1, Math.round(120 * density))
+  const count = Math.max(1, Math.round(150 * density))
   const geo = new THREE.IcosahedronGeometry(1, 0)
   const mat = new THREE.MeshLambertMaterial({ color: SCREE_COLOR, flatShading: true })
   const im = new THREE.InstancedMesh(geo, mat, count)
@@ -256,9 +284,10 @@ function buildScree(parent: THREE.Object3D, density: number): void {
   for (let i = 0; i < count; i++) {
     const side = rng() > 0.5 ? 1 : -1
     const z = TRACK_Z_START - rng() * TRACK_LENGTH_WORLD
-    const xBase = side * (RAILING_X + 0.3 + rng() * 1.2)
-    const scale = 0.1 + rng() * 0.3
-    dummy.position.set(xBase, scale * 0.4 - 0.8, z)
+    // Scree at cliff base and on slope
+    const xBase = side * (CLIFF_X_BASE - 0.5 + rng() * 3.0)
+    const scale = 0.08 + rng() * 0.25
+    dummy.position.set(xBase, scale * 0.3 - 0.9, z)
     dummy.scale.setScalar(scale)
     dummy.rotation.set(rng() * Math.PI * 2, rng() * Math.PI * 2, rng() * Math.PI * 2)
     dummy.updateMatrix()
@@ -268,15 +297,17 @@ function buildScree(parent: THREE.Object3D, density: number): void {
   parent.add(im)
 }
 
-// ─── 4. Stream / water strip (animated via SlovakWaterHandle) ────────────────
+// ─── 4. Stream — wide, bright, clearly visible gorge brook ───────────────────
 function buildStream(parent: THREE.Object3D, handle: SlovakWaterHandle): void {
-  const streamWidth = 0.5
-  const streamX = RAILING_X + streamWidth / 2 + 0.05
-  const streamY = -0.08
+  // The stream runs parallel to the path on the LEFT side (wide & prominent)
+  // It's a raised flat plane slightly above the terrain Y so camera sees it.
+  // We embed it WITH the verge: water is at y = -0.05 (above verge -0.1),
+  // showing as a bright band through the green.
+  const streamWidth = 2.0
+  const streamY = 0.01   // just above ground — clearly visible
 
-  function makeStreamPlane(width: number, x: number): void {
-    // Subdivided plane in XZ — we animate Y vertices per-frame on high tier
-    const geo = new THREE.PlaneGeometry(width, TRACK_LENGTH_WORLD, 1, 64)
+  function makeStreamPlane(width: number, x: number, yBase: number): void {
+    const geo = new THREE.PlaneGeometry(width, TRACK_LENGTH_WORLD, 2, 80)
     geo.rotateX(-Math.PI / 2)
 
     const pos = geo.attributes.position as THREE.BufferAttribute
@@ -285,11 +316,11 @@ function buildStream(parent: THREE.Object3D, handle: SlovakWaterHandle): void {
     const colArr = new Float32Array(vCount * 3)
     const [wr, wg, wb] = hexToRGB01(WATER_COLOR)
     for (let i = 0; i < vCount; i++) {
-      baseYArr[i] = streamY
-      pos.setY(i, streamY)
-      colArr[i * 3]     = wr * 0.85
-      colArr[i * 3 + 1] = wg * 0.85
-      colArr[i * 3 + 2] = wb * 0.85
+      baseYArr[i] = yBase
+      pos.setY(i, yBase)
+      colArr[i * 3]     = wr
+      colArr[i * 3 + 1] = wg
+      colArr[i * 3 + 2] = wb
     }
     geo.setAttribute('color', new THREE.BufferAttribute(colArr, 3))
     geo.computeVertexNormals()
@@ -297,7 +328,7 @@ function buildStream(parent: THREE.Object3D, handle: SlovakWaterHandle): void {
     const mat = new THREE.MeshLambertMaterial({
       vertexColors: true,
       transparent: true,
-      opacity: 0.82,
+      opacity: 0.88,
     })
     const mesh = new THREE.Mesh(geo, mat)
     mesh.position.set(x, 0, TRACK_Z_CENTER)
@@ -306,104 +337,172 @@ function buildStream(parent: THREE.Object3D, handle: SlovakWaterHandle): void {
     handle.streamEntries.push({ geo, baseY: baseYArr })
   }
 
-  makeStreamPlane(streamWidth, streamX)
-  // Mirror a narrower channel on the left
-  makeStreamPlane(0.3, -(RAILING_X + 0.3 / 2 + 0.05))
+  // Main stream: LEFT side, just outside railing in the green verge band
+  const streamXL = -(RAILING_X + streamWidth / 2 + 0.15)
+  makeStreamPlane(streamWidth, streamXL, streamY)
+
+  // Narrow secondary channel on the right side
+  const streamXR = RAILING_X + 0.7 / 2 + 0.25
+  makeStreamPlane(0.7, streamXR, streamY - 0.02)
+
+  // Mossy bank edges around main stream
+  const bankMat = new THREE.MeshLambertMaterial({ color: 0x3a6a20 })
+  const bankGeo = new THREE.BoxGeometry(0.25, 0.15, TRACK_LENGTH_WORLD)
+  const bankL = new THREE.Mesh(bankGeo, bankMat)
+  bankL.position.set(streamXL - streamWidth / 2 - 0.12, 0.0, TRACK_Z_CENTER)
+  parent.add(bankL)
+  const bankR = new THREE.Mesh(bankGeo, bankMat)
+  bankR.position.set(streamXL + streamWidth / 2 + 0.12, 0.0, TRACK_Z_CENTER)
+  parent.add(bankR)
 }
 
-// ─── 5. Trees — instanceColor variation ──────────────────────────────────────
+// ─── 5. Trees — dense forest, on slopes behind cliffs, layered ───────────────
 function buildTrees(parent: THREE.Object3D, density: number): void {
   const rng = makeLCG(19)
+  const isHigh = QUALITY_TIER !== 'low'
 
-  const treeSlots = Math.max(1, Math.round(90 * density))
-  const positions: Array<{ x: number; z: number; s: number }> = []
+  // More trees with better coverage
+  const treeSlots = Math.max(1, Math.round(160 * density))
+  const positions: Array<{ x: number; z: number; s: number; colorIdx: number }> = []
 
   for (let iz = 0; iz < treeSlots; iz++) {
-    const z = TRACK_Z_START - iz * (TRACK_LENGTH_WORLD / treeSlots) - 1.5
-    // Bias density just beyond railing, thin outward
-    const sideA = iz % 2 === 0 ? -1 : 1
-    // Inner ring (dense, close to railing)
-    const xA = sideA * (RAILING_X + 1.2 + rng() * 4.0)
-    positions.push({ x: xA, z, s: 0.65 + rng() * 0.75 })
-    // Outer ring
-    const xB = -sideA * (RAILING_X + 1.5 + rng() * 8.0)
-    positions.push({ x: xB, z: z - 2.5 * rng(), s: 0.6 + rng() * 0.8 })
-    // Extra occasional far tree
-    if (rng() > 0.5) {
-      const xC = sideA * (RAILING_X + 4 + rng() * 12)
-      positions.push({ x: xC, z: z - 4 * rng(), s: 0.5 + rng() * 0.6 })
+    const z = TRACK_Z_START - iz * (TRACK_LENGTH_WORLD / treeSlots) - 1.0
+
+    // Layer 1: just beyond the cliffs on each side (visible even above/around low cliffs)
+    for (let layer = 0; layer < 3; layer++) {
+      const side = (layer + iz) % 2 === 0 ? 1 : -1
+      // Layer at increasing distances: 2, 5, 10 units beyond cliff base
+      const xDist = CLIFF_X_BASE + [2.0, 5.5, 11.0][layer] + rng() * 2.5
+      const x = side * xDist
+      const s = 0.9 + rng() * 1.2   // taller trees, more visible
+      positions.push({ x, z: z + (rng() - 0.5) * 3, s, colorIdx: rng() > 0.5 ? 0 : 1 })
+    }
+
+    // Extra second-side tree each slot
+    if (rng() > 0.35) {
+      const side = iz % 2 === 0 ? 1 : -1
+      const x = side * (CLIFF_X_BASE + 3.0 + rng() * 14.0)
+      positions.push({ x, z: z + (rng() - 0.5) * 4, s: 0.7 + rng() * 1.0, colorIdx: 2 })
     }
   }
 
-  const trunkGeo = new THREE.CylinderGeometry(0.1, 0.16, 1.0, 5)
+  // Cone foliage: three tiers per tree for more mass
+  const trunkGeo = new THREE.CylinderGeometry(0.08, 0.16, 1.0, 5)
   const trunkMat = new THREE.MeshLambertMaterial({ color: TRUNK_COLOR })
   const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, positions.length)
 
-  // Single foliage cone instanced mesh; use instanceColor for variety
-  const foliageGeoA = new THREE.ConeGeometry(0.7, 1.8, 6)
-  const foliageMatA = new THREE.MeshLambertMaterial({ flatShading: true })
-  const foliageMeshA = new THREE.InstancedMesh(foliageGeoA, foliageMatA, positions.length)
-  foliageMeshA.instanceColor = new THREE.InstancedBufferAttribute(
-    new Float32Array(positions.length * 3), 3,
-  )
-
-  // Second foliage tier
-  const foliageGeoB = new THREE.ConeGeometry(0.5, 1.3, 6)
-  const foliageMatB = new THREE.MeshLambertMaterial({ flatShading: true })
-  const foliageMeshB = new THREE.InstancedMesh(foliageGeoB, foliageMatB, positions.length)
-  foliageMeshB.instanceColor = new THREE.InstancedBufferAttribute(
-    new Float32Array(positions.length * 3), 3,
-  )
+  const coneGeoms = [
+    new THREE.ConeGeometry(0.85, 2.0, isHigh ? 7 : 5),  // bottom tier, widest
+    new THREE.ConeGeometry(0.65, 1.8, isHigh ? 7 : 5),  // middle tier
+    new THREE.ConeGeometry(0.45, 1.5, isHigh ? 6 : 5),  // top tier
+  ]
+  const coneMats = coneGeoms.map(() => new THREE.MeshLambertMaterial({ flatShading: true }))
+  const coneMeshes = coneGeoms.map((geo, gi) => {
+    const m = new THREE.InstancedMesh(geo, coneMats[gi], positions.length)
+    m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(positions.length * 3), 3)
+    return m
+  })
 
   const dummy = new THREE.Object3D()
   const colorObj = new THREE.Color()
-  const groundY = -1.1
+
+  // Terrain height approximation (trees sit on slope)
+  function approxTerrainY(absX: number): number {
+    const corridorHW = ROAD_WORLD_WIDTH / 2 + 1.0
+    const slopeStart = CLIFF_X_BASE + 1.0
+    const slopeWidth = 18.0
+    if (absX <= corridorHW) return -1.1
+    if (absX <= slopeStart) return -1.1 + (absX - corridorHW) / (slopeStart - corridorHW) * 0.6
+    const t = Math.min(1, (absX - slopeStart) / slopeWidth)
+    return -0.5 + t * t * 7.0
+  }
 
   for (let i = 0; i < positions.length; i++) {
     const t = positions[i]
+    const terrainY = approxTerrainY(Math.abs(t.x))
+    const rootY = terrainY - 0.2   // slight embed
     const fc = FOLIAGE_COLORS[i % FOLIAGE_COLORS.length]
-    colorObj.setHex(fc)
+    const s = t.s
 
     // Trunk
-    dummy.position.set(t.x, groundY + 0.5 * t.s, t.z)
-    dummy.scale.set(t.s, t.s, t.s)
+    dummy.position.set(t.x, rootY + 0.5 * s, t.z)
+    dummy.scale.set(s, s, s)
     dummy.rotation.y = i * 1.7
     dummy.updateMatrix()
     trunkMesh.setMatrixAt(i, dummy.matrix)
 
-    // Lower foliage cone
-    dummy.position.set(t.x, groundY + 1.0 * t.s + 0.9 * t.s, t.z)
-    dummy.updateMatrix()
-    foliageMeshA.setMatrixAt(i, dummy.matrix)
-    foliageMeshA.setColorAt(i, colorObj)
-
-    // Upper foliage tier (slightly different hue)
-    const fc2 = FOLIAGE_COLORS[(i + 2) % FOLIAGE_COLORS.length]
-    colorObj.setHex(fc2)
-    dummy.position.set(t.x, groundY + 1.0 * t.s + 0.9 * t.s + 1.0 * t.s, t.z)
-    dummy.scale.set(t.s * 0.85, t.s * 0.85, t.s * 0.85)
-    dummy.updateMatrix()
-    foliageMeshB.setMatrixAt(i, dummy.matrix)
-    foliageMeshB.setColorAt(i, colorObj)
+    // Three cone tiers
+    const tierOffsets = [0.8 * s, 1.9 * s, 2.9 * s]
+    const tierScales  = [s, s * 0.88, s * 0.74]
+    for (let tier = 0; tier < 3; tier++) {
+      const fc2 = FOLIAGE_COLORS[(i + tier * 2) % FOLIAGE_COLORS.length]
+      colorObj.setHex(fc2)
+      dummy.position.set(t.x, rootY + tierOffsets[tier], t.z)
+      dummy.scale.setScalar(tierScales[tier])
+      dummy.rotation.y = i * 1.7 + tier * 0.5
+      dummy.updateMatrix()
+      coneMeshes[tier].setMatrixAt(i, dummy.matrix)
+      coneMeshes[tier].setColorAt(i, colorObj)
+    }
+    void fc  // suppress unused warning
   }
 
   trunkMesh.instanceMatrix.needsUpdate = true
-  foliageMeshA.instanceMatrix.needsUpdate = true
-  foliageMeshA.instanceColor!.needsUpdate = true
-  foliageMeshB.instanceMatrix.needsUpdate = true
-  foliageMeshB.instanceColor!.needsUpdate = true
-
   parent.add(trunkMesh)
-  parent.add(foliageMeshA)
-  parent.add(foliageMeshB)
+
+  for (const m of coneMeshes) {
+    m.instanceMatrix.needsUpdate = true
+    m.instanceColor!.needsUpdate = true
+    parent.add(m)
+  }
 }
 
-// ─── 5b. Bushes ───────────────────────────────────────────────────────────────
+// ─── 5b. Forested canopy band — a dense billboard-style ridge of treetops ────
+// Placed high on the slopes to ensure green is always visible above the cliffs
+function buildForestCanopy(parent: THREE.Object3D, density: number): void {
+  const rng = makeLCG(113)
+  // These are just clusters of spheres/cones high on the hillside
+  const count = Math.max(1, Math.round(120 * density))
+  const geo = new THREE.SphereGeometry(1, 5, 4)
+  const mat = new THREE.MeshLambertMaterial({ flatShading: true })
+  const im = new THREE.InstancedMesh(geo, mat, count)
+  im.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3)
+
+  const dummy = new THREE.Object3D()
+  const colorObj = new THREE.Color()
+
+  for (let i = 0; i < count; i++) {
+    const side = rng() > 0.5 ? 1 : -1
+    const z = TRACK_Z_START - rng() * TRACK_LENGTH_WORLD
+    // Place high on slopes, clearly visible above cliff line
+    const xDist = CLIFF_X_BASE + 6.0 + rng() * 20.0
+    const x = side * xDist
+
+    const slopeStart = CLIFF_X_BASE + 1.0
+    const t = Math.min(1, (xDist - slopeStart) / 18.0)
+    const terrainY = -0.5 + t * t * 7.0
+
+    const radius = 1.0 + rng() * 1.2
+    colorObj.setHex(FOLIAGE_COLORS[i % FOLIAGE_COLORS.length])
+
+    dummy.position.set(x, terrainY + radius * 0.8 + 1.5, z)
+    dummy.scale.set(radius, radius * 1.2, radius)
+    dummy.rotation.y = rng() * Math.PI * 2
+    dummy.updateMatrix()
+    im.setMatrixAt(i, dummy.matrix)
+    im.setColorAt(i, colorObj)
+  }
+
+  im.instanceMatrix.needsUpdate = true
+  im.instanceColor!.needsUpdate = true
+  parent.add(im)
+}
+
+// ─── 5c. Bushes ───────────────────────────────────────────────────────────────
 function buildBushes(parent: THREE.Object3D, density: number): void {
   const rng = makeLCG(61)
-  const count = Math.max(1, Math.round(80 * density))
+  const count = Math.max(1, Math.round(120 * density))
 
-  // Squashed icosahedron
   const geo = new THREE.IcosahedronGeometry(1, 1)
   const mat = new THREE.MeshLambertMaterial({ flatShading: true })
   const im = new THREE.InstancedMesh(geo, mat, count)
@@ -414,10 +513,12 @@ function buildBushes(parent: THREE.Object3D, density: number): void {
   for (let i = 0; i < count; i++) {
     const side = rng() > 0.5 ? 1 : -1
     const z = TRACK_Z_START - rng() * TRACK_LENGTH_WORLD
-    const x = side * (RAILING_X + 0.6 + rng() * 5.0)
-    const sx = 0.3 + rng() * 0.5
-    const sy = sx * (0.45 + rng() * 0.35)  // squash vertically
-    const sz = 0.3 + rng() * 0.5
+    // Mostly in the path verge and just beyond railings — visible ground cover
+    const xNorm = rng()
+    const x = side * (RAILING_X * 0.3 + xNorm * (CLIFF_X_BASE + 4.0))
+    const sx = 0.25 + rng() * 0.5
+    const sy = sx * (0.4 + rng() * 0.35)
+    const sz = 0.25 + rng() * 0.5
     dummy.position.set(x, -0.9 + sy, z)
     dummy.scale.set(sx, sy, sz)
     dummy.rotation.y = rng() * Math.PI * 2
@@ -431,25 +532,24 @@ function buildBushes(parent: THREE.Object3D, density: number): void {
   parent.add(im)
 }
 
-// ─── 5c. Grass tufts (high tier only) ────────────────────────────────────────
+// ─── 5d. Grass tufts — dense near path edges ─────────────────────────────────
 function buildGrassTufts(parent: THREE.Object3D, density: number): void {
   if (QUALITY_TIER === 'low') return
   const rng = makeLCG(79)
-  const count = Math.max(1, Math.round(200 * density))
+  const count = Math.max(1, Math.round(300 * density))
 
-  // Tiny cone cluster to suggest grass blades
-  const geo = new THREE.ConeGeometry(0.12, 0.35, 4)
-  const mat = new THREE.MeshLambertMaterial({ color: 0x5a7a30, flatShading: true })
+  const geo = new THREE.ConeGeometry(0.10, 0.30, 4)
+  const mat = new THREE.MeshLambertMaterial({ color: 0x5a8a30, flatShading: true })
   const im = new THREE.InstancedMesh(geo, mat, count)
   const dummy = new THREE.Object3D()
   for (let i = 0; i < count; i++) {
     const side = rng() > 0.5 ? 1 : -1
     const z = TRACK_Z_START - rng() * TRACK_LENGTH_WORLD
-    // Along path margins and trough edges
-    const x = side * (RAILING_X * (0.3 + rng() * 0.8))
-    dummy.position.set(x, -1.05, z)
-    dummy.scale.set(1, 0.8 + rng() * 0.5, 1)
-    dummy.rotation.set(0, rng() * Math.PI * 2, (rng() - 0.5) * 0.3)
+    // Spread from railing out to cliff base
+    const x = side * (RAILING_X * 0.1 + rng() * (CLIFF_X_BASE + 2.0))
+    dummy.position.set(x, -1.0, z)
+    dummy.scale.set(1, 0.7 + rng() * 0.6, 1)
+    dummy.rotation.set(0, rng() * Math.PI * 2, (rng() - 0.5) * 0.35)
     dummy.updateMatrix()
     im.setMatrixAt(i, dummy.matrix)
   }
@@ -457,20 +557,124 @@ function buildGrassTufts(parent: THREE.Object3D, density: number): void {
   parent.add(im)
 }
 
-// ─── 6. Boulders / scattered rocks ───────────────────────────────────────────
+// ─── 5e. Ferns — medium-sized ground ferns along the gorge banks ─────────────
+function buildFerns(parent: THREE.Object3D, density: number): void {
+  if (QUALITY_TIER === 'low') return
+  const rng = makeLCG(97)
+  const count = Math.max(1, Math.round(100 * density))
+
+  // Simple flat crossed quads suggest fern fronds
+  const geo = new THREE.PlaneGeometry(0.6, 0.4)
+  const mat = new THREE.MeshLambertMaterial({ color: FERN_COLOR, side: THREE.DoubleSide })
+  const im = new THREE.InstancedMesh(geo, mat, count)
+  const dummy = new THREE.Object3D()
+  for (let i = 0; i < count; i++) {
+    const side = rng() > 0.5 ? 1 : -1
+    const z = TRACK_Z_START - rng() * TRACK_LENGTH_WORLD
+    const x = side * (RAILING_X + 0.3 + rng() * (CLIFF_X_BASE + 1.5))
+    dummy.position.set(x, -0.88, z)
+    dummy.scale.set(0.8 + rng() * 0.6, 0.8 + rng() * 0.5, 1)
+    dummy.rotation.set(-Math.PI / 2 + (rng() - 0.5) * 0.6, rng() * Math.PI * 2, 0)
+    dummy.updateMatrix()
+    im.setMatrixAt(i, dummy.matrix)
+  }
+  im.instanceMatrix.needsUpdate = true
+  parent.add(im)
+}
+
+// ─── 5f. Wildflowers — tiny colored instanced quads ──────────────────────────
+function buildWildflowers(parent: THREE.Object3D, density: number): void {
+  if (QUALITY_TIER === 'low') return
+  const rng = makeLCG(131)
+  const count = Math.max(1, Math.round(180 * density))
+
+  // Use a flat box to suggest a flower head
+  const geo = new THREE.BoxGeometry(0.15, 0.15, 0.05)
+  const mat = new THREE.MeshLambertMaterial({ flatShading: true })
+  const im = new THREE.InstancedMesh(geo, mat, count)
+  im.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3)
+
+  const dummy = new THREE.Object3D()
+  const colorObj = new THREE.Color()
+  for (let i = 0; i < count; i++) {
+    const side = rng() > 0.5 ? 1 : -1
+    const z = TRACK_Z_START - rng() * TRACK_LENGTH_WORLD
+    const x = side * (RAILING_X * 0.3 + rng() * (CLIFF_X_BASE + 1.0))
+    dummy.position.set(x, -0.78, z)
+    dummy.scale.set(1, 1 + rng() * 0.5, 1)
+    dummy.rotation.set(0, rng() * Math.PI * 2, (rng() - 0.5) * 0.2)
+    dummy.updateMatrix()
+    im.setMatrixAt(i, dummy.matrix)
+    colorObj.setHex(FLOWER_COLORS[i % FLOWER_COLORS.length])
+    im.setColorAt(i, colorObj)
+  }
+  im.instanceMatrix.needsUpdate = true
+  im.instanceColor!.needsUpdate = true
+  parent.add(im)
+}
+
+// ─── 5g. Fallen logs — mossy logs on the banks ───────────────────────────────
+function buildFallenLogs(parent: THREE.Object3D, density: number): void {
+  const rng = makeLCG(151)
+  const count = Math.max(1, Math.round(20 * density))
+  const mat = new THREE.MeshLambertMaterial({ color: LOG_COLOR, flatShading: true })
+
+  const dummy = new THREE.Object3D()
+  const logGeo = new THREE.CylinderGeometry(0.14, 0.18, 2.0, 6)
+  const im = new THREE.InstancedMesh(logGeo, mat, count)
+
+  for (let i = 0; i < count; i++) {
+    const side = rng() > 0.5 ? 1 : -1
+    const z = TRACK_Z_START - rng() * TRACK_LENGTH_WORLD
+    const x = side * (CLIFF_X_BASE - 0.5 + rng() * 3.0)
+    dummy.position.set(x, -0.88, z)
+    dummy.scale.set(1, 1, 1)
+    // Logs lie mostly along track axis, sometimes askew
+    dummy.rotation.set(Math.PI / 2, 0, (rng() - 0.5) * 0.8)
+    dummy.updateMatrix()
+    im.setMatrixAt(i, dummy.matrix)
+  }
+  im.instanceMatrix.needsUpdate = true
+  parent.add(im)
+}
+
+// ─── 5h. Mossy rocks ─────────────────────────────────────────────────────────
+function buildMossyRocks(parent: THREE.Object3D, density: number): void {
+  const rng = makeLCG(167)
+  const count = Math.max(1, Math.round(40 * density))
+  const geo = new THREE.IcosahedronGeometry(1, 0)
+  const mat = new THREE.MeshLambertMaterial({ color: MOSS_COLOR, flatShading: true })
+  const im = new THREE.InstancedMesh(geo, mat, count)
+  const dummy = new THREE.Object3D()
+  for (let i = 0; i < count; i++) {
+    const side = rng() > 0.5 ? 1 : -1
+    const z = TRACK_Z_START - rng() * TRACK_LENGTH_WORLD
+    const x = side * (RAILING_X + 0.2 + rng() * (CLIFF_X_BASE + 0.5))
+    const scale = 0.15 + rng() * 0.35
+    dummy.position.set(x, -0.9 + scale * 0.4, z)
+    dummy.scale.set(scale * 1.3, scale * 0.8, scale * 1.1)
+    dummy.rotation.set(rng() * Math.PI, rng() * Math.PI, rng() * Math.PI)
+    dummy.updateMatrix()
+    im.setMatrixAt(i, dummy.matrix)
+  }
+  im.instanceMatrix.needsUpdate = true
+  parent.add(im)
+}
+
+// ─── 6. Boulders ─────────────────────────────────────────────────────────────
 function buildBoulders(parent: THREE.Object3D, density: number): void {
   const rng = makeLCG(31)
 
-  const count = Math.max(1, Math.round(50 * density))
+  const count = Math.max(1, Math.round(60 * density))
   const boulderDefsA: Array<{ x: number; y: number; z: number; r: number }> = []
   const boulderDefsB: Array<{ x: number; y: number; z: number; r: number }> = []
 
   for (let i = 0; i < count; i++) {
     const z = TRACK_Z_START - rng() * TRACK_LENGTH_WORLD
     const side = rng() > 0.5 ? 1 : -1
-    const x = side * (RAILING_X + 0.4 + rng() * 2.5)
-    const r = 0.25 + rng() * 0.5
-    const def = { x, y: r * 0.5 - 0.15, z, r }
+    const x = side * (RAILING_X + 0.2 + rng() * (CLIFF_X_BASE + 1.5))
+    const r = 0.2 + rng() * 0.55
+    const def = { x, y: r * 0.4 - 0.2, z, r }
     if (rng() > 0.4) boulderDefsA.push(def)
     else boulderDefsB.push(def)
   }
@@ -497,49 +701,71 @@ function buildBoulders(parent: THREE.Object3D, density: number): void {
   spawnBoulders(boulderDefsB, BOULDER_COLOR_B)
 }
 
-// ─── 7. Distant mountains ─────────────────────────────────────────────────────
+// ─── 7. Distant mountains — more layers, bigger, visible above fog line ───────
 function buildMountains(parent: THREE.Object3D): void {
-  const mountainDefs = [
-    { x: -20, z:  -30, scale: 1.1 },
-    { x: -28, z: -110, scale: 1.5 },
-    { x:  22, z:  -70, scale: 1.2 },
-    { x:  30, z: -190, scale: 1.7 },
-    { x: -19, z: -260, scale: 1.0 },
-    { x:  24, z: -310, scale: 1.4 },
-    { x: -24, z: -370, scale: 1.3 },
-    { x:  20, z: -400, scale: 0.9 },
-    // Secondary layer — further back
-    { x: -35, z:  -80, scale: 2.0 },
-    { x:  38, z: -150, scale: 2.2 },
-    { x: -33, z: -280, scale: 1.9 },
-    { x:  36, z: -350, scale: 2.1 },
+  // Near ridge — forest-green peaks just behind slopes
+  const nearDefs = [
+    { x: -18, z:  -25, scale: 1.0 },
+    { x: -26, z:  -90, scale: 1.3 },
+    { x:  20, z:  -60, scale: 1.1 },
+    { x:  28, z: -160, scale: 1.4 },
+    { x: -22, z: -220, scale: 1.2 },
+    { x:  26, z: -270, scale: 1.5 },
+    { x: -20, z: -330, scale: 1.1 },
+    { x:  22, z: -380, scale: 1.3 },
   ]
-  const mat = new THREE.MeshLambertMaterial({ color: MOUNTAIN_COLOR, flatShading: true })
-  for (const def of mountainDefs) {
-    const geo = new THREE.ConeGeometry(4.5 * def.scale, 9 * def.scale, 6)
-    const mesh = new THREE.Mesh(geo, mat)
-    mesh.position.set(def.x, 3.5 * def.scale - 1.3, def.z)
-    parent.add(mesh)
+  // Mid-distance peaks — more neutral grey-green
+  const midDefs = [
+    { x: -38, z:  -70, scale: 2.0 },
+    { x:  42, z: -130, scale: 2.2 },
+    { x: -36, z: -240, scale: 1.8 },
+    { x:  40, z: -300, scale: 2.1 },
+    { x: -40, z: -360, scale: 1.9 },
+    { x:  38, z: -410, scale: 2.0 },
+  ]
+  // Far peaks — cool blue-grey silhouettes
+  const farDefs = [
+    { x: -55, z:  -50, scale: 2.8 },
+    { x:  60, z: -100, scale: 3.0 },
+    { x: -58, z: -200, scale: 3.2 },
+    { x:  55, z: -300, scale: 2.9 },
+    { x: -50, z: -380, scale: 3.1 },
+  ]
+
+  function addPeaks(defs: typeof nearDefs, color: number): void {
+    const mat = new THREE.MeshLambertMaterial({ color, flatShading: true })
+    for (const def of defs) {
+      const geo = new THREE.ConeGeometry(5.0 * def.scale, 10 * def.scale, 7)
+      const mesh = new THREE.Mesh(geo, mat)
+      mesh.position.set(def.x, 4 * def.scale, def.z)
+      parent.add(mesh)
+    }
   }
+
+  addPeaks(nearDefs,  MOUNTAIN_COLOR_A)
+  addPeaks(midDefs,   0x6a8070)
+  addPeaks(farDefs,   MOUNTAIN_COLOR_B)
 }
 
-// ─── 8. Sky dome ─────────────────────────────────────────────────────────────
+// ─── 8. Sky dome — richer gradient ───────────────────────────────────────────
 function buildSkyDome(parent: THREE.Object3D): void {
   const isHigh = QUALITY_TIER !== 'low'
-  const segs = isHigh ? 16 : 8
-  const geo = new THREE.SphereGeometry(200, segs, isHigh ? 10 : 6)
+  const segs = isHigh ? 20 : 10
+  const geo = new THREE.SphereGeometry(300, segs, isHigh ? 12 : 7)
 
-  // Vertex color gradient: horizon = SKY_HORIZON, zenith = SKY_ZENITH
   const pos = geo.attributes.position as THREE.BufferAttribute
   const vCount = pos.count
   const colArr = new Float32Array(vCount * 3)
   const cHorizon = hexToRGB01(SKY_HORIZON)
+  const cMid     = hexToRGB01(0x78b8d5)
   const cZenith  = hexToRGB01(SKY_ZENITH)
   for (let i = 0; i < vCount; i++) {
     const y = pos.getY(i)
-    // y in [-200, 200]; map [0..200] → [0..1]
-    const t = Math.max(0, y / 200)
-    const c = lerpColor(cHorizon, cZenith, t)
+    const t = Math.max(0, y / 300)
+    // Three-stop gradient: horizon → mid-sky → zenith
+    const c = t < 0.4
+      ? lerpColor(cHorizon, cMid, t / 0.4)
+      : lerpColor(cMid, cZenith, (t - 0.4) / 0.6)
     colArr[i * 3]     = c[0]
     colArr[i * 3 + 1] = c[1]
     colArr[i * 3 + 2] = c[2]
@@ -553,10 +779,6 @@ function buildSkyDome(parent: THREE.Object3D): void {
 
 // ─── 9. Landmark helpers ──────────────────────────────────────────────────────
 
-/**
- * 'gorge' landmark — dramatic rock arch / cleft with a wooden ladder leaning.
- * Placed to the LEFT side of the track.
- */
 function buildLandmarkGorge(parent: THREE.Object3D, z: number): void {
   const rockMat  = new THREE.MeshLambertMaterial({ color: LANDMARK_ROCK, flatShading: true })
   const darkMat  = new THREE.MeshLambertMaterial({ color: LANDMARK_DARK, flatShading: true })
@@ -564,50 +786,44 @@ function buildLandmarkGorge(parent: THREE.Object3D, z: number): void {
 
   const archX = -(RAILING_X + 2.5)
 
-  // Left pillar
-  const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 7.0, 1.4), rockMat)
-  leftPillar.position.set(archX - 1.0, 3.5, z)
+  const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 5.5, 1.4), rockMat)
+  leftPillar.position.set(archX - 1.0, 2.75, z)
   parent.add(leftPillar)
 
-  // Right pillar
-  const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 6.0, 1.4), rockMat)
-  rightPillar.position.set(archX + 1.0, 3.0, z)
+  const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 4.5, 1.4), rockMat)
+  rightPillar.position.set(archX + 1.0, 2.25, z)
   parent.add(rightPillar)
 
-  // Keystone / arch lintel
   const lintel = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.0, 1.2), darkMat)
-  lintel.position.set(archX, 6.8, z)
+  lintel.position.set(archX, 5.3, z)
   parent.add(lintel)
 
-  // Overhang crag (irregular overhang rock)
   const crag = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.8, 0.9), rockMat)
-  crag.position.set(archX + 0.3, 7.5, z - 0.2)
+  crag.position.set(archX + 0.3, 6.0, z - 0.2)
   parent.add(crag)
 
-  // Wooden ladder — two rails + 5 rungs, leaning against the right cliff face
-  const railGeo = new THREE.BoxGeometry(0.1, 4.0, 0.1)
-  const leanTilt = 0.22  // slight lean angle (radians)
+  const railGeo = new THREE.BoxGeometry(0.1, 3.5, 0.1)
+  const leanTilt = 0.22
   const ladderX = archX + 0.9
 
   const railL = new THREE.Mesh(railGeo, woodMat)
-  railL.position.set(ladderX - 0.25, 2.0, z - 0.5)
+  railL.position.set(ladderX - 0.25, 1.75, z - 0.5)
   railL.rotation.z = leanTilt
   parent.add(railL)
 
   const railR = new THREE.Mesh(railGeo, woodMat)
-  railR.position.set(ladderX + 0.25, 2.0, z - 0.5)
+  railR.position.set(ladderX + 0.25, 1.75, z - 0.5)
   railR.rotation.z = leanTilt
   parent.add(railR)
 
   const rungGeo = new THREE.BoxGeometry(0.5, 0.08, 0.08)
   for (let r = 0; r < 5; r++) {
     const rung = new THREE.Mesh(rungGeo, woodMat)
-    rung.position.set(ladderX, 0.5 + r * 0.75, z - 0.5)
+    rung.position.set(ladderX, 0.4 + r * 0.65, z - 0.5)
     rung.rotation.z = leanTilt
     parent.add(rung)
   }
 
-  // Handrail posts near the gorge
   const postMat = new THREE.MeshLambertMaterial({ color: WOOD_COLOR })
   const postGeo = new THREE.BoxGeometry(0.08, 0.7, 0.08)
   for (let p = 0; p < 4; p++) {
@@ -622,10 +838,6 @@ function buildLandmarkGorge(parent: THREE.Object3D, z: number): void {
   parent.add(railTop)
 }
 
-/**
- * 'waterfall' landmark — tall cliff face with animated water sheet.
- * Returns waterfall geometry entry for animation.
- */
 function buildLandmarkWaterfall(
   parent: THREE.Object3D,
   z: number,
@@ -637,24 +849,19 @@ function buildLandmarkWaterfall(
 
   const wfX = RAILING_X + 2.8
 
-  // Main cliff face — very tall
-  const cliff = new THREE.Mesh(new THREE.BoxGeometry(3.5, 10.0, 1.8), rockMat)
-  cliff.position.set(wfX, 5.0, z)
+  const cliff = new THREE.Mesh(new THREE.BoxGeometry(3.5, 9.0, 1.8), rockMat)
+  cliff.position.set(wfX, 4.5, z)
   parent.add(cliff)
 
-  // Ledge step mid-cliff
   const ledge = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 1.2), darkMat)
-  ledge.position.set(wfX - 0.3, 6.5, z - 0.7)
+  ledge.position.set(wfX - 0.3, 6.0, z - 0.7)
   parent.add(ledge)
 
-  // Cliff top cap
   const cap = new THREE.Mesh(new THREE.BoxGeometry(4.0, 1.0, 2.2), rockMat)
-  cap.position.set(wfX, 10.5, z)
+  cap.position.set(wfX, 9.5, z)
   parent.add(cap)
 
-  // Animated water sheet — subdivided vertical plane
-  const wfGeo = new THREE.PlaneGeometry(1.2, 9.0, 1, 18)
-  // Build vertex colors (initial state)
+  const wfGeo = new THREE.PlaneGeometry(1.2, 8.5, 1, 18)
   const wfPos = wfGeo.attributes.position as THREE.BufferAttribute
   const wfCount = wfPos.count
   const wfColArr = new Float32Array(wfCount * 3)
@@ -670,20 +877,17 @@ function buildLandmarkWaterfall(
     opacity: 0.85,
   })
   const wfMesh = new THREE.Mesh(wfGeo, wfMat)
-  wfMesh.position.set(wfX - 0.1, 5.0, z - 0.95)
+  wfMesh.position.set(wfX - 0.1, 4.5, z - 0.95)
   parent.add(wfMesh)
 
-  // Save baseY for waterfall (all Y values from PlaneGeometry)
   const wfBaseY = new Float32Array(wfCount)
   for (let i = 0; i < wfCount; i++) wfBaseY[i] = wfPos.getY(i)
   handle.waterfallEntries.push({ geo: wfGeo, baseY: wfBaseY })
 
-  // Splash pool at base
   const pool = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.12, 1.6), splashMat)
   pool.position.set(wfX - 0.1, 0.06, z - 0.8)
   parent.add(pool)
 
-  // Small side boulders framing the fall
   const boulderMat = new THREE.MeshLambertMaterial({ color: BOULDER_COLOR_A, flatShading: true })
   const b1 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 0), boulderMat)
   b1.position.set(wfX - 1.2, 0.3, z - 0.6)
@@ -693,10 +897,6 @@ function buildLandmarkWaterfall(
   parent.add(b2)
 }
 
-/**
- * 'viewpoint' landmark — Tomášovský výhľad: a jutting rock outcrop/platform
- * high up to the LEFT, evoking the famous cliff viewpoint.
- */
 function buildLandmarkViewpoint(parent: THREE.Object3D, z: number): void {
   const rockMat  = new THREE.MeshLambertMaterial({ color: LANDMARK_ROCK, flatShading: true })
   const darkMat  = new THREE.MeshLambertMaterial({ color: LANDMARK_DARK, flatShading: true })
@@ -704,32 +904,26 @@ function buildLandmarkViewpoint(parent: THREE.Object3D, z: number): void {
 
   const vpX = -(RAILING_X + 3.5)
 
-  // Tall base column rising from ground
-  const column = new THREE.Mesh(new THREE.BoxGeometry(2.8, 8.0, 2.4), rockMat)
-  column.position.set(vpX, 4.0, z)
+  const column = new THREE.Mesh(new THREE.BoxGeometry(2.8, 7.0, 2.4), rockMat)
+  column.position.set(vpX, 3.5, z)
   parent.add(column)
 
-  // The jutting overhang platform — wider than column, pushed forward
   const platform = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.7, 3.0), capMat)
-  platform.position.set(vpX + 0.5, 8.35, z - 0.5)
+  platform.position.set(vpX + 0.5, 7.35, z - 0.5)
   parent.add(platform)
 
-  // Rock face behind platform (connects to cliff wall)
-  const back = new THREE.Mesh(new THREE.BoxGeometry(3.0, 3.0, 1.4), darkMat)
-  back.position.set(vpX - 0.2, 9.5, z + 0.5)
+  const back = new THREE.Mesh(new THREE.BoxGeometry(3.0, 2.5, 1.4), darkMat)
+  back.position.set(vpX - 0.2, 8.8, z + 0.5)
   parent.add(back)
 
-  // Rough crag cap on top
   const crag = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.2, 1.8), rockMat)
-  crag.position.set(vpX + 0.2, 11.3, z + 0.3)
+  crag.position.set(vpX + 0.2, 10.2, z + 0.3)
   parent.add(crag)
 
-  // Lip edge detail (dark strip at front of platform)
   const lip = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.25, 0.18), darkMat)
-  lip.position.set(vpX + 0.5, 8.6, z - 2.0)
+  lip.position.set(vpX + 0.5, 7.6, z - 2.0)
   parent.add(lip)
 
-  // A couple of rocks at the base of the column
   const smallRockMat = new THREE.MeshLambertMaterial({ color: BOULDER_COLOR_B, flatShading: true })
   const r1 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.6, 0), smallRockMat)
   r1.position.set(vpX + 1.6, 0.3, z - 0.8)
@@ -760,9 +954,14 @@ export function buildSlovakParadiseEnvironment(parent: THREE.Object3D): SlovakWa
   buildCliffWalls(parent)
   buildScree(parent, TREE_DENSITY)
   buildBoulders(parent, TREE_DENSITY)
+  buildMossyRocks(parent, TREE_DENSITY)
+  buildFallenLogs(parent, TREE_DENSITY)
   buildTrees(parent, TREE_DENSITY)
+  buildForestCanopy(parent, TREE_DENSITY)
   buildBushes(parent, TREE_DENSITY)
   buildGrassTufts(parent, TREE_DENSITY)
+  buildFerns(parent, TREE_DENSITY)
+  buildWildflowers(parent, TREE_DENSITY)
   buildMountains(parent)
   buildLandmarks(parent, handle)
 

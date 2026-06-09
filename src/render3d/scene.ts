@@ -42,6 +42,9 @@ interface EnvConfig {
   hemiSky: number
   hemiGround: number
   hemiIntensity: number
+  /** Override fog near/far for this environment. Falls back to global FOG_NEAR/FOG_FAR. */
+  fogNear?: number
+  fogFar?: number
   build: (parent: THREE.Object3D) => void | SlovakWaterHandle
 }
 
@@ -60,15 +63,18 @@ const ENV_CONFIGS: Record<string, EnvConfig> = {
   },
   'slovak-paradise': {
     // Cool, fresh mountain-valley light — raking low sun angle for drama.
-    skyColor: 0xbcd6df,
-    ambientColor: 0xe2eef2,
-    ambientIntensity: 0.35,
-    sunColor: 0xfff2dc,
-    sunIntensity: 1.15,
-    sunPosition: [7, 9, 4],
-    hemiSky: 0xbcd6df,
-    hemiGround: 0x3f6b2f,
-    hemiIntensity: 0.45,
+    skyColor: 0xa8cfe0,
+    ambientColor: 0xdeeef5,
+    ambientIntensity: 0.55,
+    sunColor: 0xfff5e0,
+    sunIntensity: 1.3,
+    sunPosition: [10, 14, 6],
+    hemiSky: 0xa8cfe0,
+    hemiGround: 0x4a7a30,
+    hemiIntensity: 0.55,
+    // Push fog much further so mid-ground forest and peaks are visible.
+    fogNear: 55,
+    fogFar: 130,
     build: buildSlovakParadiseEnvironment,
   },
 }
@@ -138,8 +144,10 @@ export function setEnvironment(stage: Stage, id: string): void {
     group.visible = groupId === resolvedId
   }
 
+  const fogNear = cfg.fogNear ?? FOG_NEAR
+  const fogFar  = cfg.fogFar  ?? FOG_FAR
   stage.scene.background = new THREE.Color(cfg.skyColor)
-  stage.scene.fog = new THREE.Fog(cfg.skyColor, FOG_NEAR, FOG_FAR)
+  stage.scene.fog = new THREE.Fog(cfg.skyColor, fogNear, fogFar)
   stage.ambient.color.setHex(cfg.ambientColor)
   stage.ambient.intensity = cfg.ambientIntensity
   stage.sun.color.setHex(cfg.sunColor)
@@ -152,7 +160,9 @@ export function setEnvironment(stage: Stage, id: string): void {
 }
 
 export function updateStage(stage: Stage, state: GameState): void {
-  if (state.phase === 'climbing') {
+  // Stay in the climb framing through the brief death-pause of a mid-climb hit.
+  const inClimb = state.phase === 'climbing' || (state.phase === 'dying' && state.climb.active)
+  if (inClimb) {
     // Frame the ladder from below/behind, tilted up so the climb reads vertical.
     const c = state.climb
     const gx = toWorldX(c.gapCenter)

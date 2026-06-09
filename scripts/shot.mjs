@@ -14,9 +14,31 @@
 // Env: TARGET home|china|slovak|climb · OUT path · WAIT ms · SHOTS n · INTERVAL ms
 //      TAPS n (ArrowUp presses spread over the run) · KEYS csv (pressed once each)
 //      DIST n (dev ?d=) · CHAR boy|girl|cat|bear · PORT (4173) · URL (skip server)
-import { chromium } from 'playwright'
 import { spawn } from 'node:child_process'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { createRequire } from 'node:module'
+import { existsSync, readdirSync } from 'node:fs'
+
+// `import 'playwright'` (ESM) ignores NODE_PATH; createRequire/require honours it
+// so the globally-installed playwright resolves inside the docker image.
+const require = createRequire(import.meta.url)
+
+// Point Playwright at whichever browsers dir actually contains chromium.
+;(function fixBrowsersPath() {
+  const home = process.env.HOME ?? '/home/node'
+  const candidates = [process.env.PLAYWRIGHT_BROWSERS_PATH, '/ms-playwright', `${home}/.cache/ms-playwright`]
+  for (const dir of candidates) {
+    try {
+      if (dir && existsSync(dir) && readdirSync(dir).some((n) => n.startsWith('chromium-'))) {
+        process.env.PLAYWRIGHT_BROWSERS_PATH = dir
+        return
+      }
+    } catch {}
+  }
+  delete process.env.PLAYWRIGHT_BROWSERS_PATH // fall back to Playwright's default
+})()
+
+const { chromium } = require('playwright')
 
 const TARGET = process.env.TARGET ?? 'slovak'
 const OUT = process.env.OUT ?? `/tmp/shot-${TARGET}.png`
@@ -27,7 +49,9 @@ const TAPS = Number(process.env.TAPS ?? (TARGET === 'climb' ? 8 : 0))
 const KEYS = (process.env.KEYS ?? '').split(',').map((k) => k.trim()).filter(Boolean)
 const DIST = process.env.DIST
 const CHAR = process.env.CHAR ?? (TARGET === 'climb' ? 'bear' : 'boy')
-const PORT = Number(process.env.PORT ?? 4173)
+// Dev server (not preview): the ?env/?climb/?d deep-links only exist when
+// import.meta.env.DEV is true, i.e. under `vite dev`.
+const PORT = Number(process.env.PORT ?? 5173)
 const BASE = process.env.URL ?? `http://localhost:${PORT}/`
 
 // Build the dev deep-link query for the target.
@@ -44,7 +68,7 @@ function targetUrl() {
 let server = null
 async function ensureServer() {
   if (process.env.URL) return
-  server = spawn('npm', ['run', 'preview', '--', '--port', String(PORT), '--strictPort'], {
+  server = spawn('npm', ['run', 'dev', '--', '--port', String(PORT), '--strictPort'], {
     cwd: process.cwd(), stdio: 'ignore',
   })
   for (let i = 0; i < 40; i++) {

@@ -121,7 +121,9 @@ function createGorgeGates(): { walls: Obstacle[]; ladders: Obstacle[] } {
     if (best) best.climb = true
   }
 
-  return { walls, ladders }
+  // Keep a ladder ONLY where you actually climb — a ladder now unambiguously
+  // means "climb here", instead of a decorative mat in every gap.
+  return { walls, ladders: ladders.filter((l) => l.climb) }
 }
 
 // Hikers and forest animals crossing the trail between gorge gates.

@@ -261,6 +261,83 @@ function makeLadder(width: number, geos: THREE.BufferGeometry[], mats: THREE.Mat
   return group
 }
 
+// A designated climb section: a tall standing ladder against a rock backdrop,
+// framed by a wooden arch with a banner and a bright up-arrow, so the player
+// clearly sees "you climb up here" before the run hands over to the mini-game.
+function makeClimbGate(width: number, geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const w = Math.min(Math.max(width * 0.7, 0.8), 1.2)
+  const H = 2.6
+
+  const backMat = new THREE.MeshLambertMaterial({ color: 0x6a6258, flatShading: true })
+  mats.push(backMat)
+  const backGeo = new THREE.BoxGeometry(width + 0.2, H + 0.4, 0.3)
+  geos.push(backGeo)
+  const back = new THREE.Mesh(backGeo, backMat)
+  back.position.set(0, (H + 0.4) / 2 - 0.2, -0.4)
+  group.add(back)
+
+  const railMat = new THREE.MeshLambertMaterial({ color: 0x8a5a32 })
+  mats.push(railMat)
+  const railGeo = new THREE.BoxGeometry(0.1, H, 0.1)
+  geos.push(railGeo)
+  for (const sx of [-w * 0.4, w * 0.4]) {
+    const rail = new THREE.Mesh(railGeo, railMat)
+    rail.position.set(sx, H / 2, -0.18)
+    group.add(rail)
+  }
+  const rungMat = new THREE.MeshLambertMaterial({ color: 0xb07b46 })
+  mats.push(rungMat)
+  const rungGeo = new THREE.BoxGeometry(w * 0.9, 0.08, 0.08)
+  geos.push(rungGeo)
+  const rungN = 7
+  for (let i = 0; i < rungN; i++) {
+    const rung = new THREE.Mesh(rungGeo, rungMat)
+    rung.position.set(0, 0.25 + i * ((H - 0.4) / (rungN - 1)), -0.18)
+    group.add(rung)
+  }
+
+  // Wooden arch frame.
+  const woodMat = new THREE.MeshLambertMaterial({ color: 0x6e4a2a })
+  mats.push(woodMat)
+  const postGeo = new THREE.BoxGeometry(0.12, H + 0.3, 0.12)
+  geos.push(postGeo)
+  for (const sx of [-(width / 2 + 0.1), width / 2 + 0.1]) {
+    const post = new THREE.Mesh(postGeo, woodMat)
+    post.position.set(sx, (H + 0.3) / 2, 0.1)
+    group.add(post)
+  }
+  const beamGeo = new THREE.BoxGeometry(width + 0.4, 0.16, 0.16)
+  geos.push(beamGeo)
+  const beam = new THREE.Mesh(beamGeo, woodMat)
+  beam.position.set(0, H + 0.25, 0.1)
+  group.add(beam)
+
+  const bannerMat = new THREE.MeshLambertMaterial({ color: 0xd11e2a })
+  mats.push(bannerMat)
+  const bannerGeo = new THREE.BoxGeometry(width * 0.6, 0.4, 0.03)
+  geos.push(bannerGeo)
+  const banner = new THREE.Mesh(bannerGeo, bannerMat)
+  banner.position.set(0, H + 0.02, 0.14)
+  group.add(banner)
+
+  // Bright up-arrow (unlit so it pops regardless of lighting).
+  const arrowMat = new THREE.MeshBasicMaterial({ color: 0xffd23f })
+  mats.push(arrowMat)
+  const shaftGeo = new THREE.BoxGeometry(0.16, 0.5, 0.05)
+  geos.push(shaftGeo)
+  const shaft = new THREE.Mesh(shaftGeo, arrowMat)
+  shaft.position.set(0, H + 0.95, 0.22)
+  group.add(shaft)
+  const headGeo = new THREE.ConeGeometry(0.28, 0.42, 4)
+  geos.push(headGeo)
+  const head = new THREE.Mesh(headGeo, arrowMat)
+  head.position.set(0, H + 1.3, 0.22)
+  group.add(head)
+
+  return group
+}
+
 function makeNoodles(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
   const group = new THREE.Group()
   const s = COLLECTIBLE_WORLD_SIZE
@@ -468,7 +545,7 @@ function buildObstacleEntry(
   } else if (kind === 'gorge-wall') {
     group = makeGorgeWall(width, geos, mats)
   } else if (kind === 'ladder') {
-    group = makeLadder(width, geos, mats)
+    group = obstacle.climb ? makeClimbGate(width, geos, mats) : makeLadder(width, geos, mats)
   } else {
     group = makeCarrier(geos, mats)
   }
@@ -629,6 +706,13 @@ export function updateEntities(pool: EntityPool, state: GameState): void {
     const distanceDelta = Math.abs(o.trackY - state.distance)
 
     if (distanceDelta > CULL_DISTANCE) {
+      entry.group.visible = false
+      continue
+    }
+
+    // Hide the climb-gate marker while its mini-game is active — the dedicated
+    // climb view renders the ladder there, so the marker would just overlap it.
+    if (o.kind === 'ladder' && o.climb && state.climb.active) {
       entry.group.visible = false
       continue
     }

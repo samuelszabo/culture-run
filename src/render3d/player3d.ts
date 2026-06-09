@@ -937,9 +937,13 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
   const { phase, player, elapsed, distance, deathPauseFor } = state
   const isCat = state.character === 'cat'
 
+  // Treat the brief death-pause of a mid-climb hit as still climbing, so the
+  // player stays on the ladder instead of dropping to the gate base off-camera.
+  const inClimb = phase === 'climbing' || (phase === 'dying' && state.climb.active)
+
   const pos = playerWorldPosition(player.x, distance)
   // The climbing branch fully owns the player transform (lane x + fixed Y).
-  if (phase !== 'climbing') {
+  if (!inClimb) {
     group.position.set(pos.x, toWorldSize(player.jumpHeight), pos.z)
   }
 
@@ -958,7 +962,30 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
   // Cat leg resets
   for (const lg of catLegs) lg.rotation.x = 0
 
-  if (phase === 'running') {
+  if (inClimb) {
+    const c = state.climb
+    const gx = toWorldX(c.gapCenter)
+    const gz = toWorldZ(c.gateTrackY)
+    const laneX = gx + (c.lane - (CLIMB_LANES - 1) / 2) * CLIMB_LANE_WORLD_DX
+    // Smooth lateral slide between lanes; fixed height while rungs scroll past.
+    group.position.x += (laneX - group.position.x) * 0.3
+    group.position.y = CLIMB_PLAYER_WORLD_Y
+    group.position.z = gz + 0.1
+
+    // Reaching climb cycle keyed off how far up the player has tapped.
+    const reach = Math.sin(c.progress * 0.05)
+    if (isCat) {
+      catLegs[0].rotation.x = -0.4 - reach * 0.4
+      catLegs[1].rotation.x = -0.4 + reach * 0.4
+      catLegs[2].rotation.x = -0.2 + reach * 0.4
+      catLegs[3].rotation.x = -0.2 - reach * 0.4
+    } else {
+      armLGroup.rotation.x = -2.4 - reach * 0.5 // arms reaching overhead
+      armRGroup.rotation.x = -2.4 + reach * 0.5
+      legLGroup.rotation.x = reach * 0.5
+      legRGroup.rotation.x = -reach * 0.5
+    }
+  } else if (phase === 'running') {
     const swing = Math.sin(distance * 0.05)
 
     if (isCat) {
@@ -1000,29 +1027,6 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
     } else {
       armLGroup.rotation.x = -Math.PI * 0.6
       armRGroup.rotation.x = -Math.PI * 0.6
-    }
-  } else if (phase === 'climbing') {
-    const c = state.climb
-    const gx = toWorldX(c.gapCenter)
-    const gz = toWorldZ(c.gateTrackY)
-    const laneX = gx + (c.lane - (CLIMB_LANES - 1) / 2) * CLIMB_LANE_WORLD_DX
-    // Smooth lateral slide between lanes; fixed height while rungs scroll past.
-    group.position.x += (laneX - group.position.x) * 0.3
-    group.position.y = CLIMB_PLAYER_WORLD_Y
-    group.position.z = gz + 0.1
-
-    // Reaching climb cycle keyed off how far up the player has tapped.
-    const reach = Math.sin(c.progress * 0.05)
-    if (isCat) {
-      catLegs[0].rotation.x = -0.4 - reach * 0.4
-      catLegs[1].rotation.x = -0.4 + reach * 0.4
-      catLegs[2].rotation.x = -0.2 + reach * 0.4
-      catLegs[3].rotation.x = -0.2 - reach * 0.4
-    } else {
-      armLGroup.rotation.x = -2.4 - reach * 0.5   // arms reaching overhead
-      armRGroup.rotation.x = -2.4 + reach * 0.5
-      legLGroup.rotation.x = reach * 0.5
-      legRGroup.rotation.x = -reach * 0.5
     }
   }
 
@@ -1154,7 +1158,7 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
   // Bear chaser animation
   if (p.chaserGroup) {
     // While climbing, the bear waits at the foot of the ladder, looking up.
-    if (phase === 'climbing') {
+    if (inClimb) {
       const c = state.climb
       const gx = toWorldX(c.gapCenter)
       const gz = toWorldZ(c.gateTrackY)
