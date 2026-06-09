@@ -73,10 +73,10 @@ function createCloudFeatures(): Features {
       // a child only has to hold the open lane for ~one body-length to clear it.
       towers.push({ kind: 'tower-top', x: cx, trackY, w: TOWER_WIDTH, h: 90 })
     } else {
-      // h is the LETHAL depth, kept small + aligned with the foot-print check so
-      // the kill zone matches the visible hole (the renderer draws a ~30px-deep
-      // gap). You die only when your feet are actually over the hole.
-      gaps.push({ kind: 'cloud-gap', x: ROAD_CENTER, trackY, w: ROAD_WIDTH, h: 16 })
+      // h is the HALF-depth of the hole (collision is symmetric ±h around the
+      // centre and the renderer draws a 2·h-deep gap), so the kill zone exactly
+      // matches the visible hole. 32 → a clearly visible ~64px-wide chasm.
+      gaps.push({ kind: 'cloud-gap', x: ROAD_CENTER, trackY, w: ROAD_WIDTH, h: 32 })
     }
   }
 

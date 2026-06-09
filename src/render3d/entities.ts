@@ -344,14 +344,26 @@ function makeClimbGate(width: number, geos: THREE.BufferGeometry[], mats: THREE.
 // as "gap — jump here". Built around the local origin; width spans the road.
 function makeCloudGap(width: number, geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
   const group = new THREE.Group()
-  // A wide, fairly shallow shaft: wide enough in z that the runner camera can
-  // actually see down to the city, shallow enough that the desert reads clearly.
-  const depth = toWorldSize(54)
+  // Visual depth = 2× the gap's collision half-depth (32px) so the drawn hole
+  // exactly matches where the player actually falls.
+  const depth = toWorldSize(64)
+  const shaftH = 7
 
-  const shaftH = 4
-  // Dark interior so the hole clearly contrasts against the bright white cloud
-  // road — otherwise the gap blends in and you can't see where to jump.
-  const shaftMat = new THREE.MeshBasicMaterial({ color: 0x1c2b3e, side: THREE.DoubleSide })
+  // A near-black opening filling the hole mouth, so against the white cloud road
+  // it reads as an unmistakable dark gap from any angle (the previous thin slot
+  // was almost invisible). Sits just above the puff tops to mask the road below.
+  const mouthGeo = new THREE.PlaneGeometry(width, depth)
+  const mouthMat = new THREE.MeshBasicMaterial({ color: 0x0c1622 })
+  geos.push(mouthGeo)
+  mats.push(mouthMat)
+  const mouth = new THREE.Mesh(mouthGeo, mouthMat)
+  mouth.rotation.x = -Math.PI / 2
+  mouth.position.y = 0.22
+  group.add(mouth)
+
+  // Dark shaft walls dropping away below the mouth (skip the NEAR wall so the
+  // camera can see down into the hole instead of it being capped from the front).
+  const shaftMat = new THREE.MeshBasicMaterial({ color: 0x13202f, side: THREE.DoubleSide })
   mats.push(shaftMat)
   const sideGeo = new THREE.PlaneGeometry(depth, shaftH)
   geos.push(sideGeo)
@@ -367,12 +379,11 @@ function makeCloudGap(width: number, geos: THREE.BufferGeometry[], mats: THREE.M
   backWall.position.set(0, -shaftH / 2, -depth / 2)
   group.add(backWall)
 
-  // Dubai, far below: a dim, haze-dulled desert seen through the hole. Kept much
-  // darker than the cloud road so the gap stays obviously a hole (it also reads
-  // as "far away down there", which a brighter sand did not).
+  // Dubai, far below: a dim haze-dulled desert with a road and pale rooftops,
+  // glimpsed deep down the shaft when the hole is near/under the player.
   const groundY = -shaftH
-  const sandGeo = new THREE.PlaneGeometry(width * 1.4, depth * 1.6)
-  const sandMat = new THREE.MeshBasicMaterial({ color: 0x6f5c3a })
+  const sandGeo = new THREE.PlaneGeometry(width * 1.3, depth * 1.4)
+  const sandMat = new THREE.MeshBasicMaterial({ color: 0x5f4f33 })
   geos.push(sandGeo)
   mats.push(sandMat)
   const sand = new THREE.Mesh(sandGeo, sandMat)
@@ -380,26 +391,14 @@ function makeCloudGap(width: number, geos: THREE.BufferGeometry[], mats: THREE.M
   sand.position.set(0, groundY, 0)
   group.add(sand)
 
-  const roadGeo = new THREE.PlaneGeometry(width * 1.4, depth * 0.4)
-  const roadMat = new THREE.MeshBasicMaterial({ color: 0x4f4630 })
-  geos.push(roadGeo)
-  mats.push(roadMat)
-  const road = new THREE.Mesh(roadGeo, roadMat)
-  road.rotation.x = -Math.PI / 2
-  road.position.set(0, groundY + 0.02, 0)
-  group.add(road)
-
-  // Tiny city blocks viewed from high above — pale glass so they pop out of the
-  // dark desert as the only bright thing down the hole.
   const blockGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5)
   geos.push(blockGeo)
-  const blockMat = new THREE.MeshBasicMaterial({ color: 0xaec6da })
+  const blockMat = new THREE.MeshBasicMaterial({ color: 0x9fb6c8 })
   mats.push(blockMat)
   const blockSpots = [
-    [-width * 0.3, 0.25, -depth * 0.3],
-    [width * 0.28, 0.5, depth * 0.2],
-    [-width * 0.05, 0.35, depth * 0.35],
-    [width * 0.05, 0.6, -depth * 0.15],
+    [-width * 0.28, 0.3, -depth * 0.25],
+    [width * 0.26, 0.6, depth * 0.18],
+    [-width * 0.04, 0.4, depth * 0.3],
   ]
   for (const [bx, by, bz] of blockSpots) {
     const block = new THREE.Mesh(blockGeo, blockMat)
@@ -408,21 +407,20 @@ function makeCloudGap(width: number, geos: THREE.BufferGeometry[], mats: THREE.M
     group.add(block)
   }
 
-  // Bright cloud-lip puffs lining the near and far rims of the hole.
-  const lipGeo = new THREE.SphereGeometry(0.34, 7, 5)
+  // A raised, bright cloud lip ONLY on the far rim — it pops against the dark
+  // interior and clearly marks the far edge you have to clear.
+  const lipGeo = new THREE.SphereGeometry(0.4, 7, 5)
   const lipMat = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true })
   geos.push(lipGeo)
   mats.push(lipMat)
-  const puffsPerRim = Math.max(3, Math.round(width / 0.7))
-  for (const rimZ of [-depth / 2, depth / 2]) {
-    for (let i = 0; i < puffsPerRim; i++) {
-      const t = puffsPerRim === 1 ? 0.5 : i / (puffsPerRim - 1)
-      const px = -width / 2 + t * width
-      const puff = new THREE.Mesh(lipGeo, lipMat)
-      puff.position.set(px, 0.08, rimZ)
-      puff.scale.set(1, 0.55, 0.85)
-      group.add(puff)
-    }
+  const puffs = Math.max(3, Math.round(width / 0.7))
+  for (let i = 0; i < puffs; i++) {
+    const t = puffs === 1 ? 0.5 : i / (puffs - 1)
+    const px = -width / 2 + t * width
+    const puff = new THREE.Mesh(lipGeo, lipMat)
+    puff.position.set(px, 0.28, -depth / 2)
+    puff.scale.set(1, 0.7, 0.9)
+    group.add(puff)
   }
 
   return group
