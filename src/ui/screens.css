@@ -2,7 +2,10 @@
   position: fixed;
   inset: 0;
   display: flex;
-  align-items: center;
+  /* flex-start (not center): with overflow-y:auto, centering a child taller than
+     the viewport clips its top and makes it impossible to scroll up. Short
+     screens look identical because .screen has min-height:100%. */
+  align-items: flex-start;
   justify-content: center;
   z-index: 100;
   background: #1a0a00;

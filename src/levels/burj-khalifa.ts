@@ -73,7 +73,10 @@ function createCloudFeatures(): Features {
       // a child only has to hold the open lane for ~one body-length to clear it.
       towers.push({ kind: 'tower-top', x: cx, trackY, w: TOWER_WIDTH, h: 90 })
     } else {
-      gaps.push({ kind: 'cloud-gap', x: ROAD_CENTER, trackY, w: ROAD_WIDTH, h: 30 })
+      // h is the LETHAL depth, kept small + aligned with the foot-print check so
+      // the kill zone matches the visible hole (the renderer draws a ~30px-deep
+      // gap). You die only when your feet are actually over the hole.
+      gaps.push({ kind: 'cloud-gap', x: ROAD_CENTER, trackY, w: ROAD_WIDTH, h: 16 })
     }
   }
 
@@ -99,30 +102,31 @@ const PICKUP_POINTS = 15
 const PICKUP_TARGET = 72
 
 const HALF = COLLECTIBLE_SIZE / 2
-// Lateral swing of the zig-zag weave (px). The food snakes left↔right across the
-// cloud road instead of running straight down the middle, so the player has to
-// drift to scoop it up.
-const WEAVE_AMP = 130
+// A loose left↔right weave plus random jitter — the food scatters across the
+// cloud road rather than tracing a clean zig-zag, so it feels organic.
+const WEAVE_AMP = 115
+const WEAVE_JITTER = 70
 
 function createCloudCollectibles(towers: Obstacle[]): Collectible[] {
+  const rand = mulberry32(0x5eed42)
   const collectibles: Collectible[] = []
-  const step = 200
+  let trackY = 1500
   let i = 0
-  for (let trackY = 1500; trackY <= 18000 && collectibles.length < PICKUP_TARGET; trackY += step) {
-    // Gentle sine weave across the road…
-    let x = ROAD_CENTER + WEAVE_AMP * Math.sin(i * 0.8)
-    // …but near a tower-top, snap onto the guaranteed-open lane so the pickup is
-    // never buried inside the skyscraper.
+  while (trackY <= 18500 && collectibles.length < PICKUP_TARGET) {
+    // Base sine weave, nudged by random jitter so the line isn't perfectly regular.
+    let x = ROAD_CENTER + WEAVE_AMP * Math.sin(i * 0.8) + (rand() - 0.5) * 2 * WEAVE_JITTER
+    // Near a tower-top, snap onto the guaranteed-open lane so the pickup is never
+    // buried inside the skyscraper.
     const lane = safeXAt(trackY, towers)
     if (lane !== ROAD_CENTER) x = lane
     x = Math.max(ROAD_LEFT + HALF, Math.min(ROAD_RIGHT - HALF, x))
-    collectibles.push({
-      kind: FOOD_KINDS[i % FOOD_KINDS.length],
-      x,
-      trackY,
-      points: PICKUP_POINTS,
-      collected: false,
-    })
+    // Mostly cycle the three foods, occasionally pick at random for variety.
+    const kind =
+      rand() < 0.3
+        ? FOOD_KINDS[Math.floor(rand() * FOOD_KINDS.length)]
+        : FOOD_KINDS[i % FOOD_KINDS.length]
+    collectibles.push({ kind, x, trackY, points: PICKUP_POINTS, collected: false })
+    trackY += 160 + rand() * 80
     i++
   }
   return collectibles

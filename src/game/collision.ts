@@ -1,4 +1,4 @@
-import { AABB, GameState, JUMP_CLEAR_HEIGHT, Obstacle, isJumpable, obstacleBox, playerBox } from './types'
+import { AABB, GameState, JUMP_CLEAR_HEIGHT, Obstacle, PLAYER_SCREEN_Y, isJumpable, obstacleBox, playerBox } from './types'
 
 export function intersects(a: AABB, b: AABB): boolean {
   return (
@@ -7,6 +7,17 @@ export function intersects(a: AABB, b: AABB): boolean {
     a.y < b.y + b.h &&
     a.y + a.h > b.y
   )
+}
+
+// A cloud-gap is a hole you fall into — only the player's FEET matter, not their
+// whole 48px-tall body box. Using the full box made the gap lethal while it was
+// still ~48px ahead (at head height in screen projection), so the runner "died
+// before reaching the hole". This shallow foot-print lines the deadly zone up
+// with the hole actually under the player.
+const FOOT_HEIGHT = 12
+
+function playerFootBox(pBox: AABB): AABB {
+  return { x: pBox.x, y: PLAYER_SCREEN_Y - FOOT_HEIGHT, w: pBox.w, h: FOOT_HEIGHT }
 }
 
 export function findCollision(state: GameState): Obstacle | null {
@@ -29,7 +40,8 @@ export function findCollision(state: GameState): Obstacle | null {
     }
 
     const oBox = obstacleBox(obstacle, state.distance)
-    if (intersects(pBox, oBox)) {
+    const hitBox = obstacle.kind === 'cloud-gap' ? playerFootBox(pBox) : pBox
+    if (intersects(hitBox, oBox)) {
       return obstacle
     }
   }

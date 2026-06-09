@@ -73,6 +73,9 @@ export interface Player3D {
   falconGroup: THREE.Group | null
   falconWingL: THREE.Mesh | null
   falconWingR: THREE.Mesh | null
+  // Ground contact-shadow (cloud level only): a dark disc on the cloud surface
+  // that stays put while the player jumps, so feet/landing spot stay readable.
+  shadow: THREE.Mesh | null
   scene: THREE.Scene
 }
 
@@ -1138,6 +1141,24 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
 
   scene.add(group)
 
+  // On the cloud level the white puffs hide where the feet are, making jump
+  // timing hard — drop a soft contact-shadow on the cloud surface as a depth cue.
+  let shadow: THREE.Mesh | null = null
+  const isCloud = state.obstacles.some((o) => o.kind === 'cloud-gap')
+  if (isCloud) {
+    const shadowGeo = new THREE.CircleGeometry(0.52, 20)
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x14202c,
+      transparent: true,
+      opacity: 0.4,
+      depthWrite: false,
+    })
+    shadow = new THREE.Mesh(shadowGeo, shadowMat)
+    shadow.rotation.x = -Math.PI / 2
+    shadow.position.set(pos.x, 0.04, pos.z)
+    scene.add(shadow)
+  }
+
   return {
     group,
     body,
@@ -1192,6 +1213,7 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     falconGroup,
     falconWingL,
     falconWingR,
+    shadow,
     scene,
   }
 }
@@ -1214,6 +1236,20 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
   // The climbing branch fully owns the player transform (lane x + fixed Y).
   if (!inClimb) {
     group.position.set(pos.x, groundY + toWorldSize(player.jumpHeight), pos.z)
+  }
+
+  // Contact-shadow stays on the ground under the player; it shrinks and fades as
+  // the player jumps higher, marking both the feet and the landing spot.
+  if (p.shadow) {
+    const showShadow = !inClimb && (phase === 'running' || phase === 'dying')
+    p.shadow.visible = showShadow && group.visible
+    if (showShadow) {
+      const lift = toWorldSize(player.jumpHeight)
+      const k = Math.max(0.45, 1 - lift * 0.55)
+      p.shadow.position.set(pos.x, groundY + 0.04, pos.z)
+      p.shadow.scale.set(k, k, k)
+      ;(p.shadow.material as THREE.MeshBasicMaterial).opacity = 0.4 * k
+    }
   }
 
   const isBlinking = player.invulnerableFor > 0 && Math.floor(elapsed * 10) % 2 === 0
@@ -1583,5 +1619,12 @@ export function disposePlayer3D(p: Player3D): void {
   if (p.chaserGroup) {
     p.scene.remove(p.chaserGroup)
     disposeGroup(p.chaserGroup)
+  }
+
+  // Contact-shadow also lives directly in the scene.
+  if (p.shadow) {
+    p.scene.remove(p.shadow)
+    p.shadow.geometry.dispose()
+    ;(p.shadow.material as THREE.Material).dispose()
   }
 }

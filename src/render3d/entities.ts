@@ -344,30 +344,68 @@ function makeClimbGate(width: number, geos: THREE.BufferGeometry[], mats: THREE.
 // as "gap — jump here". Built around the local origin; width spans the road.
 function makeCloudGap(width: number, geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
   const group = new THREE.Group()
-  const depth = toWorldSize(30)
+  // A wide, fairly shallow shaft: wide enough in z that the runner camera can
+  // actually see down to the city, shallow enough that the desert reads clearly.
+  const depth = toWorldSize(54)
 
-  // Void floor — slightly darker than the warm sky so it reads as a drop.
-  const voidGeo = new THREE.PlaneGeometry(width, depth)
-  const voidMat = new THREE.MeshBasicMaterial({ color: 0x4a78a8 })
-  geos.push(voidGeo)
-  mats.push(voidMat)
-  const voidPlane = new THREE.Mesh(voidGeo, voidMat)
-  voidPlane.rotation.x = -Math.PI / 2
-  voidPlane.position.y = 0.01
-  group.add(voidPlane)
+  const shaftH = 4
+  const shaftMat = new THREE.MeshBasicMaterial({ color: 0x3f5d7c, side: THREE.DoubleSide })
+  mats.push(shaftMat)
+  const sideGeo = new THREE.PlaneGeometry(depth, shaftH)
+  geos.push(sideGeo)
+  for (const sx of [-width / 2, width / 2]) {
+    const wall = new THREE.Mesh(sideGeo, shaftMat)
+    wall.rotation.y = Math.PI / 2
+    wall.position.set(sx, -shaftH / 2, 0)
+    group.add(wall)
+  }
+  const backGeo = new THREE.PlaneGeometry(width, shaftH)
+  geos.push(backGeo)
+  const backWall = new THREE.Mesh(backGeo, shaftMat)
+  backWall.position.set(0, -shaftH / 2, -depth / 2)
+  group.add(backWall)
 
-  // A faint lower cloud far below, glimpsed through the hole.
-  const farGeo = new THREE.PlaneGeometry(width * 0.7, depth * 0.6)
-  const farMat = new THREE.MeshBasicMaterial({ color: 0xbcd2e6, transparent: true, opacity: 0.6 })
-  geos.push(farGeo)
-  mats.push(farMat)
-  const far = new THREE.Mesh(farGeo, farMat)
-  far.rotation.x = -Math.PI / 2
-  far.position.y = -1.4
-  group.add(far)
+  // Dubai, far below: hazy desert sand with a road and a few tiny rooftops, seen
+  // through the hole — sells "running high in the clouds, the city way down there".
+  const groundY = -shaftH
+  const sandGeo = new THREE.PlaneGeometry(width * 1.4, depth * 1.6)
+  const sandMat = new THREE.MeshBasicMaterial({ color: 0xe0c489 })
+  geos.push(sandGeo)
+  mats.push(sandMat)
+  const sand = new THREE.Mesh(sandGeo, sandMat)
+  sand.rotation.x = -Math.PI / 2
+  sand.position.set(0, groundY, 0)
+  group.add(sand)
+
+  const roadGeo = new THREE.PlaneGeometry(width * 1.4, depth * 0.4)
+  const roadMat = new THREE.MeshBasicMaterial({ color: 0x8d7c5c })
+  geos.push(roadGeo)
+  mats.push(roadMat)
+  const road = new THREE.Mesh(roadGeo, roadMat)
+  road.rotation.x = -Math.PI / 2
+  road.position.set(0, groundY + 0.02, 0)
+  group.add(road)
+
+  // Tiny city blocks viewed from high above.
+  const blockGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5)
+  geos.push(blockGeo)
+  const blockMat = new THREE.MeshBasicMaterial({ color: 0x96b4cc })
+  mats.push(blockMat)
+  const blockSpots = [
+    [-width * 0.3, 0.25, -depth * 0.3],
+    [width * 0.28, 0.5, depth * 0.2],
+    [-width * 0.05, 0.35, depth * 0.35],
+    [width * 0.05, 0.6, -depth * 0.15],
+  ]
+  for (const [bx, by, bz] of blockSpots) {
+    const block = new THREE.Mesh(blockGeo, blockMat)
+    block.position.set(bx, groundY + by, bz)
+    block.scale.y = by * 2
+    group.add(block)
+  }
 
   // Bright cloud-lip puffs lining the near and far rims of the hole.
-  const lipGeo = new THREE.SphereGeometry(0.32, 7, 5)
+  const lipGeo = new THREE.SphereGeometry(0.34, 7, 5)
   const lipMat = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true })
   geos.push(lipGeo)
   mats.push(lipMat)
@@ -377,8 +415,8 @@ function makeCloudGap(width: number, geos: THREE.BufferGeometry[], mats: THREE.M
       const t = puffsPerRim === 1 ? 0.5 : i / (puffsPerRim - 1)
       const px = -width / 2 + t * width
       const puff = new THREE.Mesh(lipGeo, lipMat)
-      puff.position.set(px, 0.06, rimZ)
-      puff.scale.set(1, 0.55, 0.8)
+      puff.position.set(px, 0.08, rimZ)
+      puff.scale.set(1, 0.55, 0.85)
       group.add(puff)
     }
   }
