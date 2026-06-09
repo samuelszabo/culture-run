@@ -59,6 +59,16 @@ export const CLIMB_CAM_HEIGHT = 0.6
 export const CLIMB_CAM_LOOK_UP = 3.2
 export const CLIMB_CAM_LOOK_AHEAD = 1.5
 
+// Gentle rolling height (world units, range ~0..0.5) of the Slovak stone trail
+// at a given trackY. The player, camera and trackside scenery all ride this so
+// the boulder path visibly rises and dips underfoot.
+export function slovakPathHeight(trackY: number): number {
+  return (
+    0.35 * (0.5 + 0.5 * Math.sin(trackY * 0.0016)) +
+    0.15 * (0.5 + 0.5 * Math.sin(trackY * 0.0037 + 1.3))
+  )
+}
+
 export function playerWorldPosition(playerX: number, distance: number): { x: number; z: number } {
   return { x: toWorldX(playerX), z: toWorldZ(distance) }
 }

@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { Collectible, CollectibleKind, GameState, Obstacle, ObstacleKind } from '../game/types'
-import { COLLECTIBLE_WORLD_SIZE, OBSTACLE_WORLD_HEIGHTS, obstacleWorldPosition, toWorldSize, toWorldX, toWorldZ } from './world'
+import { COLLECTIBLE_WORLD_SIZE, OBSTACLE_WORLD_HEIGHTS, obstacleWorldPosition, slovakPathHeight, toWorldSize, toWorldX, toWorldZ } from './world'
 import { loadModel } from './models'
 import { ANIM_CULL_DISTANCE } from './quality'
 
@@ -721,6 +721,8 @@ export function updateEntities(pool: EntityPool, state: GameState): void {
     const pos = obstacleWorldPosition(o)
     entry.group.position.x = pos.x
     entry.group.position.z = pos.z
+    // Sit on the rolling boulder trail (Slovak level only).
+    entry.group.position.y = state.chaser ? slovakPathHeight(o.trackY) : 0
 
     if (o.kind === 'firecracker' && entry.normal && entry.warning && entry.blast) {
       // Only update blink state when the obstacle is within the animated/visible range
@@ -753,7 +755,8 @@ export function updateEntities(pool: EntityPool, state: GameState): void {
     // Animate (bob + spin) only within camera-visible range (≤ fog end distance).
     // Items beyond that are hidden by fog anyway; skipping saves sin/float work per frame.
     if (entry.group.visible && distanceDelta <= ANIM_CULL_DISTANCE) {
-      entry.group.position.y = entry.baseY + Math.sin(state.elapsed * 3 + i) * 0.08
+      const groundY = state.chaser ? slovakPathHeight(c.trackY) : 0
+      entry.group.position.y = groundY + entry.baseY + Math.sin(state.elapsed * 3 + i) * 0.08
       entry.group.rotation.y = state.elapsed * 1.2 + i
     }
   }

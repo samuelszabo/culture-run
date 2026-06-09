@@ -12,6 +12,7 @@ import {
   CLIMB_CAM_LOOK_UP,
   CLIMB_PLAYER_WORLD_Y,
   playerWorldPosition,
+  slovakPathHeight,
   toWorldX,
   toWorldZ,
 } from './world'
@@ -171,14 +172,16 @@ export function updateStage(stage: Stage, state: GameState): void {
     stage.camera.lookAt(gx, CLIMB_PLAYER_WORLD_Y + CLIMB_CAM_LOOK_UP, gz - CLIMB_CAM_LOOK_AHEAD)
   } else {
     const p = playerWorldPosition(state.player.x, state.distance)
+    // Follow the rolling boulder-trail height on the Slovak level.
+    const gY = state.chaser ? slovakPathHeight(state.distance) : 0
     stage.camera.position.set(
       p.x * CAMERA_LATERAL_FOLLOW,
-      CAMERA_HEIGHT,
+      CAMERA_HEIGHT + gY,
       p.z + CAMERA_BACK,
     )
     stage.camera.lookAt(
       p.x * CAMERA_LATERAL_FOLLOW,
-      CAMERA_LOOK_HEIGHT,
+      CAMERA_LOOK_HEIGHT + gY,
       p.z - CAMERA_LOOK_AHEAD,
     )
   }

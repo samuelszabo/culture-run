@@ -5,6 +5,7 @@ import {
   TRACK_Z_START,
   TRACK_LENGTH_WORLD,
   TRACK_Z_CENTER,
+  slovakPathHeight,
 } from '../world'
 import { TREE_DENSITY, QUALITY_TIER } from '../quality'
 import { getLevel } from '../../levels/registry'
@@ -144,6 +145,8 @@ function buildPath(parent: THREE.Object3D): void {
   let i = 0
   for (let r = 0; r < rows; r++) {
     const zc = TRACK_Z_START - r * stepZ - stepZ / 2
+    // Stones follow the rolling trail height so the path rises and dips.
+    const groundY = slovakPathHeight(-zc * UNIT)
     const rowOffset = (r % 2) * (w / cols) * 0.5 // brick-like staggering
     for (let c = 0; c < cols; c++) {
       const baseX = -w / 2 + (w / cols) * (c + 0.5) + rowOffset
@@ -151,7 +154,7 @@ function buildPath(parent: THREE.Object3D): void {
       const rx = 1.35 + rng() * 0.8 // large boulders, overlapping neighbours
       const rz = 1.35 + rng() * 0.8
       const sy = 0.4 + rng() * 0.32
-      const topY = (rng() - 0.5) * 0.1 // slight unevenness, still walkable
+      const topY = groundY + rng() * 0.08 // ride the trail + slight unevenness
       dummy.position.set(x, topY - sy * 0.5, zc + (rng() - 0.5) * 0.5)
       dummy.scale.set(rx, sy, rz)
       dummy.rotation.set(0, rng() * 6.283, 0)

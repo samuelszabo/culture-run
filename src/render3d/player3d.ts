@@ -5,6 +5,7 @@ import {
   CLIMB_PLAYER_WORLD_Y,
   playerWorldPosition,
   PLAYER_WORLD_HEIGHT,
+  slovakPathHeight,
   toWorldSize,
   toWorldX,
   toWorldZ,
@@ -942,9 +943,11 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
   const inClimb = phase === 'climbing' || (phase === 'dying' && state.climb.active)
 
   const pos = playerWorldPosition(player.x, distance)
+  // The Slovak boulder trail rolls up and down; the runner rides its height.
+  const groundY = state.chaser ? slovakPathHeight(distance) : 0
   // The climbing branch fully owns the player transform (lane x + fixed Y).
   if (!inClimb) {
-    group.position.set(pos.x, toWorldSize(player.jumpHeight), pos.z)
+    group.position.set(pos.x, groundY + toWorldSize(player.jumpHeight), pos.z)
   }
 
   const isBlinking = player.invulnerableFor > 0 && Math.floor(elapsed * 10) % 2 === 0
@@ -1020,7 +1023,7 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
     body.rotation.x = -progress * (Math.PI / 2)
   } else if (phase === 'finished') {
     const bounce = Math.abs(Math.sin(elapsed * 6)) * 0.35
-    group.position.y = bounce
+    group.position.y = groundY + bounce
     if (isCat) {
       catLegs[0].rotation.x = -Math.PI * 0.3
       catLegs[1].rotation.x = -Math.PI * 0.3
