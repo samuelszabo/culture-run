@@ -13,7 +13,8 @@ export function updateDying(state: GameState, dt: number): void {
   if (state.lives <= 0) {
     state.phase = 'gameover'
   } else {
-    state.phase = 'running'
+    // A death mid-climb resumes the climb, not the run.
+    state.phase = state.climb.active ? 'climbing' : 'running'
     state.player.invulnerableFor = INVULNERABLE_SECONDS
   }
 }

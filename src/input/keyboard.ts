@@ -9,7 +9,10 @@ export function attachKeyboard(input: InputState): void {
     if (LEFT_KEYS.has(event.code)) input.leftHeld = true
     if (RIGHT_KEYS.has(event.code)) input.rightHeld = true
     if (JUMP_KEYS.has(event.code)) {
+      // Same keys jump while running and climb-up while on a ladder; the active
+      // phase consumes the matching flag and clears it.
       input.jumpQueued = true
+      input.climbQueued = true
       event.preventDefault()
     }
   })

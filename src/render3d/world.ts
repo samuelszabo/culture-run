@@ -46,6 +46,19 @@ export const CAMERA_LOOK_AHEAD = 7
 export const CAMERA_LOOK_HEIGHT = 0.9
 export const CAMERA_LATERAL_FOLLOW = 0.45
 
+// ── Ladder-climb render mapping ───────────────────────────────────────────
+// Lateral spacing between the 3 ladder lanes, in world X.
+export const CLIMB_LANE_WORLD_DX = 0.6
+// World Y gained per 1 climb-space px (CLIMB_STEP=90px → ~0.5 world per rung).
+export const CLIMB_WORLD_PER_PX = 0.5 / 90
+// Player sits at this fixed world height during the climb; rungs/rocks scroll.
+export const CLIMB_PLAYER_WORLD_Y = 1.0
+// Camera framing while climbing: behind, low, looking up the ladder.
+export const CLIMB_CAM_BACK = 4.2
+export const CLIMB_CAM_HEIGHT = 0.6
+export const CLIMB_CAM_LOOK_UP = 3.2
+export const CLIMB_CAM_LOOK_AHEAD = 1.5
+
 export function playerWorldPosition(playerX: number, distance: number): { x: number; z: number } {
   return { x: toWorldX(playerX), z: toWorldZ(distance) }
 }

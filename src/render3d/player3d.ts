@@ -1,6 +1,14 @@
 import * as THREE from 'three'
-import { GameState, DEATH_PAUSE_SECONDS } from '../game/types'
-import { playerWorldPosition, PLAYER_WORLD_HEIGHT, toWorldSize } from './world'
+import { CLIMB_LANES, GameState, DEATH_PAUSE_SECONDS } from '../game/types'
+import {
+  CLIMB_LANE_WORLD_DX,
+  CLIMB_PLAYER_WORLD_Y,
+  playerWorldPosition,
+  PLAYER_WORLD_HEIGHT,
+  toWorldSize,
+  toWorldX,
+  toWorldZ,
+} from './world'
 
 export interface Player3D {
   group: THREE.Group
@@ -930,7 +938,10 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
   const isCat = state.character === 'cat'
 
   const pos = playerWorldPosition(player.x, distance)
-  group.position.set(pos.x, toWorldSize(player.jumpHeight), pos.z)
+  // The climbing branch fully owns the player transform (lane x + fixed Y).
+  if (phase !== 'climbing') {
+    group.position.set(pos.x, toWorldSize(player.jumpHeight), pos.z)
+  }
 
   const isBlinking = player.invulnerableFor > 0 && Math.floor(elapsed * 10) % 2 === 0
   group.visible = !isBlinking
@@ -989,6 +1000,29 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
     } else {
       armLGroup.rotation.x = -Math.PI * 0.6
       armRGroup.rotation.x = -Math.PI * 0.6
+    }
+  } else if (phase === 'climbing') {
+    const c = state.climb
+    const gx = toWorldX(c.gapCenter)
+    const gz = toWorldZ(c.gateTrackY)
+    const laneX = gx + (c.lane - (CLIMB_LANES - 1) / 2) * CLIMB_LANE_WORLD_DX
+    // Smooth lateral slide between lanes; fixed height while rungs scroll past.
+    group.position.x += (laneX - group.position.x) * 0.3
+    group.position.y = CLIMB_PLAYER_WORLD_Y
+    group.position.z = gz + 0.1
+
+    // Reaching climb cycle keyed off how far up the player has tapped.
+    const reach = Math.sin(c.progress * 0.05)
+    if (isCat) {
+      catLegs[0].rotation.x = -0.4 - reach * 0.4
+      catLegs[1].rotation.x = -0.4 + reach * 0.4
+      catLegs[2].rotation.x = -0.2 + reach * 0.4
+      catLegs[3].rotation.x = -0.2 - reach * 0.4
+    } else {
+      armLGroup.rotation.x = -2.4 - reach * 0.5   // arms reaching overhead
+      armRGroup.rotation.x = -2.4 + reach * 0.5
+      legLGroup.rotation.x = reach * 0.5
+      legRGroup.rotation.x = -reach * 0.5
     }
   }
 
@@ -1119,6 +1153,22 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
 
   // Bear chaser animation
   if (p.chaserGroup) {
+    // While climbing, the bear waits at the foot of the ladder, looking up.
+    if (phase === 'climbing') {
+      const c = state.climb
+      const gx = toWorldX(c.gapCenter)
+      const gz = toWorldZ(c.gateTrackY)
+      p.chaserGroup.position.set(gx, 0, gz + 2.2)
+      p.chaserGroup.rotation.x = 0
+      const sway = Math.sin(elapsed * 3)
+      for (const lg of p.chaserLegs) lg.rotation.x = 0
+      if (p.chaserLegs.length >= 2) {
+        p.chaserLegs[0].rotation.x = sway * 0.2
+        p.chaserLegs[1].rotation.x = -sway * 0.2
+      }
+      return
+    }
+
     const playerPos = playerWorldPosition(player.x, distance)
 
     // Target z offset based on lives and phase

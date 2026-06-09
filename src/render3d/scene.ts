@@ -6,11 +6,18 @@ import {
   CAMERA_LOOK_AHEAD,
   CAMERA_LOOK_HEIGHT,
   CAMERA_LATERAL_FOLLOW,
+  CLIMB_CAM_BACK,
+  CLIMB_CAM_HEIGHT,
+  CLIMB_CAM_LOOK_AHEAD,
+  CLIMB_CAM_LOOK_UP,
+  CLIMB_PLAYER_WORLD_Y,
   playerWorldPosition,
+  toWorldX,
+  toWorldZ,
 } from './world'
-import { ANTIALIAS, DPR_CAP, FOG_NEAR, FOG_FAR } from './quality'
+import { ANTIALIAS, DPR_CAP, FOG_NEAR, FOG_FAR, QUALITY_TIER } from './quality'
 import { buildChinaWallEnvironment } from './environments/china-wall'
-import { buildSlovakParadiseEnvironment } from './environments/slovak-paradise'
+import { buildSlovakParadiseEnvironment, SlovakWaterHandle } from './environments/slovak-paradise'
 
 export interface Stage {
   scene: THREE.Scene
@@ -18,8 +25,11 @@ export interface Stage {
   renderer: THREE.WebGLRenderer
   ambient: THREE.AmbientLight
   sun: THREE.DirectionalLight
+  hemi: THREE.HemisphereLight
   envGroups: Record<string, THREE.Group>
   currentEnv: string
+  /** Populated when slovak-paradise group is built; used for per-frame water animation. */
+  slovakWater?: SlovakWaterHandle
 }
 
 interface EnvConfig {
@@ -29,7 +39,10 @@ interface EnvConfig {
   sunColor: number
   sunIntensity: number
   sunPosition: [number, number, number]
-  build: (parent: THREE.Object3D) => void
+  hemiSky: number
+  hemiGround: number
+  hemiIntensity: number
+  build: (parent: THREE.Object3D) => void | SlovakWaterHandle
 }
 
 const ENV_CONFIGS: Record<string, EnvConfig> = {
@@ -40,16 +53,22 @@ const ENV_CONFIGS: Record<string, EnvConfig> = {
     sunColor: 0xffcc88,
     sunIntensity: 1.4,
     sunPosition: [8, 12, 5],
+    hemiSky: 0xfff4d6,
+    hemiGround: 0x4a7a30,
+    hemiIntensity: 0.35,
     build: buildChinaWallEnvironment,
   },
   'slovak-paradise': {
-    // Cool, fresh mountain-valley light instead of China's warm gold.
+    // Cool, fresh mountain-valley light — raking low sun angle for drama.
     skyColor: 0xbcd6df,
     ambientColor: 0xe2eef2,
-    ambientIntensity: 0.78,
+    ambientIntensity: 0.35,
     sunColor: 0xfff2dc,
     sunIntensity: 1.15,
-    sunPosition: [6, 13, 4],
+    sunPosition: [7, 9, 4],
+    hemiSky: 0xbcd6df,
+    hemiGround: 0x3f6b2f,
+    hemiIntensity: 0.45,
     build: buildSlovakParadiseEnvironment,
   },
 }
@@ -74,18 +93,27 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   const sun = new THREE.DirectionalLight(0xffffff, 1.4)
   scene.add(sun)
 
+  // Single hemisphere light shared across all envs; intensity/colours set in setEnvironment.
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0)
+  scene.add(hemi)
+
   // Build every environment once into its own group; switching toggles
   // visibility (cheap) instead of rebuilding/disposing scenery per run.
   const envGroups: Record<string, THREE.Group> = {}
+  let slovakWater: SlovakWaterHandle | undefined
+
   for (const [id, cfg] of Object.entries(ENV_CONFIGS)) {
     const group = new THREE.Group()
-    cfg.build(group)
+    const result = cfg.build(group)
+    if (id === 'slovak-paradise' && result) {
+      slovakWater = result as SlovakWaterHandle
+    }
     group.visible = false
     scene.add(group)
     envGroups[id] = group
   }
 
-  const stage: Stage = { scene, camera, renderer, ambient, sun, envGroups, currentEnv: DEFAULT_ENV }
+  const stage: Stage = { scene, camera, renderer, ambient, sun, hemi, envGroups, currentEnv: DEFAULT_ENV, slovakWater }
   setEnvironment(stage, DEFAULT_ENV)
 
   window.addEventListener('resize', () => {
@@ -117,21 +145,77 @@ export function setEnvironment(stage: Stage, id: string): void {
   stage.sun.color.setHex(cfg.sunColor)
   stage.sun.intensity = cfg.sunIntensity
   stage.sun.position.set(...cfg.sunPosition)
+  stage.hemi.color.setHex(cfg.hemiSky)
+  stage.hemi.groundColor.setHex(cfg.hemiGround)
+  stage.hemi.intensity = cfg.hemiIntensity
   stage.currentEnv = resolvedId
 }
 
 export function updateStage(stage: Stage, state: GameState): void {
-  const p = playerWorldPosition(state.player.x, state.distance)
-  stage.camera.position.set(
-    p.x * CAMERA_LATERAL_FOLLOW,
-    CAMERA_HEIGHT,
-    p.z + CAMERA_BACK,
-  )
-  stage.camera.lookAt(
-    p.x * CAMERA_LATERAL_FOLLOW,
-    CAMERA_LOOK_HEIGHT,
-    p.z - CAMERA_LOOK_AHEAD,
-  )
+  if (state.phase === 'climbing') {
+    // Frame the ladder from below/behind, tilted up so the climb reads vertical.
+    const c = state.climb
+    const gx = toWorldX(c.gapCenter)
+    const gz = toWorldZ(c.gateTrackY)
+    stage.camera.position.set(gx, CLIMB_PLAYER_WORLD_Y + CLIMB_CAM_HEIGHT, gz + CLIMB_CAM_BACK)
+    stage.camera.lookAt(gx, CLIMB_PLAYER_WORLD_Y + CLIMB_CAM_LOOK_UP, gz - CLIMB_CAM_LOOK_AHEAD)
+  } else {
+    const p = playerWorldPosition(state.player.x, state.distance)
+    stage.camera.position.set(
+      p.x * CAMERA_LATERAL_FOLLOW,
+      CAMERA_HEIGHT,
+      p.z + CAMERA_BACK,
+    )
+    stage.camera.lookAt(
+      p.x * CAMERA_LATERAL_FOLLOW,
+      CAMERA_LOOK_HEIGHT,
+      p.z - CAMERA_LOOK_AHEAD,
+    )
+  }
+
+  // Per-frame water animation — only on high tier, only for Slovak Paradise.
+  if (stage.currentEnv === 'slovak-paradise' && QUALITY_TIER !== 'low' && stage.slovakWater) {
+    animateSlovakWater(stage.slovakWater, state.elapsed)
+  }
+}
+
+/** Ripple stream and waterfall geometry using elapsed time (seconds). */
+function animateSlovakWater(handle: SlovakWaterHandle, elapsed: number): void {
+  // Stream — gentle sin-wave ripple in Y + scrolling brightness vertex color
+  for (const entry of handle.streamEntries) {
+    const pos = entry.geo.attributes.position as THREE.BufferAttribute
+    const col = entry.geo.attributes.color as THREE.BufferAttribute
+    const baseY = entry.baseY
+    const vCount = pos.count
+    for (let i = 0; i < vCount; i++) {
+      const z = pos.getZ(i)
+      const wave = Math.sin(z * 1.4 + elapsed * 2.2) * 0.025
+      pos.setY(i, baseY[i] + wave)
+      // Scrolling brightness band
+      const brightness = 0.55 + 0.25 * Math.sin(z * 0.8 - elapsed * 1.8)
+      col.setXYZ(i, brightness * 0.44, brightness * 0.66, brightness * 0.75)
+    }
+    pos.needsUpdate = true
+    col.needsUpdate = true
+    entry.geo.computeVertexNormals()
+  }
+
+  // Waterfall — scroll brightness bands downward
+  for (const entry of handle.waterfallEntries) {
+    const pos = entry.geo.attributes.position as THREE.BufferAttribute
+    const col = entry.geo.attributes.color as THREE.BufferAttribute
+    const vCount = pos.count
+    for (let i = 0; i < vCount; i++) {
+      const y = pos.getY(i)
+      // Downward-scrolling foam bands
+      const band = 0.45 + 0.45 * Math.sin(y * 2.2 + elapsed * 4.5)
+      // Foam line at top (y > 4.0)
+      const foam = y > 4.0 ? Math.min(1.0, (y - 4.0) * 0.8 + 0.6) : 0.0
+      const b = Math.max(band, foam)
+      col.setXYZ(i, b * 0.85, b * 0.94, b)
+    }
+    col.needsUpdate = true
+  }
 }
 
 export function renderStage(stage: Stage): void {

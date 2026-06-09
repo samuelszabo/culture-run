@@ -105,6 +105,22 @@ function createGorgeGates(): { walls: Obstacle[]; ladders: Obstacle[] } {
     })
   }
 
+  // Promote the ladder nearest each anchor into a full climb-mini-game section.
+  // Three, spaced between the landmark captions so a child isn't reading and
+  // climbing at once. The rest stay decorative dodge-through gaps.
+  for (const anchor of [3500, 9000, 14500]) {
+    let best: Obstacle | null = null
+    let bestDist = Infinity
+    for (const l of ladders) {
+      const d = Math.abs(l.trackY - anchor)
+      if (d < bestDist) {
+        bestDist = d
+        best = l
+      }
+    }
+    if (best) best.climb = true
+  }
+
   return { walls, ladders }
 }
 

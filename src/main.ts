@@ -1,4 +1,5 @@
 import { collectPickups } from './game/collectibles'
+import { enterClimb, updateClimb } from './game/climb'
 import { findCollision } from './game/collision'
 import { killPlayer, updateDying } from './game/lives'
 import { startLoop } from './game/loop'
@@ -8,6 +9,7 @@ import { applyDeathPenalty, computeStars } from './game/scoring'
 import {
   BASE_SPEED,
   GameState,
+  Obstacle,
   ROAD_LEFT,
   ROAD_RIGHT,
   TRACK_LENGTH,
@@ -18,6 +20,7 @@ import { t } from './i18n/strings'
 import { attachKeyboard } from './input/keyboard'
 import { attachTouch } from './input/touch'
 import { getLevel } from './levels/registry'
+import { ClimbView, createClimbView, disposeClimbView, updateClimbView } from './render3d/climb-view'
 import { EntityPool, createEntities, disposeEntities, updateEntities } from './render3d/entities'
 import { Player3D, createPlayer3D, disposePlayer3D, updatePlayer3D } from './render3d/player3d'
 import { createStage, renderStage, setEnvironment, updateStage } from './render3d/scene'
@@ -41,6 +44,9 @@ const save = loadSave()
 let state: GameState | null = null
 let entities: EntityPool | null = null
 let player3d: Player3D | null = null
+let climbView: ClimbView | null = null
+let climbGates: Obstacle[] = []
+let triggeredClimbs = new Set<number>()
 let resultsShown = false
 let landmarksShown = new Set<string>()
 let lastToastSeq = 0
@@ -69,8 +75,10 @@ function newGame(): GameState {
 function disposeWorld(): void {
   if (entities) disposeEntities(entities)
   if (player3d) disposePlayer3D(player3d)
+  if (climbView) disposeClimbView(climbView)
   entities = null
   player3d = null
+  climbView = null
 }
 
 function startGame(): void {
@@ -83,6 +91,11 @@ function startGame(): void {
   state = newGame()
   entities = createEntities(stage.scene, state)
   player3d = createPlayer3D(stage.scene, state)
+  climbView = createClimbView(stage.scene)
+  climbGates = state.obstacles
+    .filter((o) => o.kind === 'ladder' && o.climb)
+    .sort((a, b) => a.trackY - b.trackY)
+  triggeredClimbs = new Set()
   resultsShown = false
   quizTakenThisRun = false
   quizBonusEarned = 0
@@ -91,6 +104,8 @@ function startGame(): void {
   lastToastSeq = 0
   input.touchTargetX = null
   input.jumpQueued = false
+  input.climbQueued = false
+  input.climbLane = 0
   showHud()
 }
 
@@ -118,7 +133,7 @@ initScreens(save, () => persistSave(save), {
   },
 })
 attachKeyboard(input)
-attachTouch(canvas, input, screenToGameX)
+attachTouch(canvas, input, screenToGameX, () => (state ? state.phase === 'climbing' : false))
 showHome()
 
 function gameEnded(): boolean {
@@ -132,6 +147,15 @@ window.addEventListener('keydown', (event) => {
   if (event.code === 'Escape') goHome()
 })
 
+// The first not-yet-triggered climb gate the player has reached, if any.
+function nextClimbGate(distance: number): Obstacle | null {
+  for (const gate of climbGates) {
+    if (triggeredClimbs.has(gate.trackY)) continue
+    return distance >= gate.trackY ? gate : null
+  }
+  return null
+}
+
 function update(dt: number): void {
   if (!state) return
 
@@ -139,27 +163,41 @@ function update(dt: number): void {
 
   if (state.phase === 'dying') {
     updateDying(state, dt)
+  } else if (state.phase === 'climbing') {
+    updateClimb(state, input, dt)
   } else if (state.phase === 'running') {
     state.speed = BASE_SPEED * (1 + 0.3 * Math.min(1, state.distance / TRACK_LENGTH))
     state.distance += state.speed * dt
-    updateMovers(state, dt)
-    updatePlayer(state, input, dt)
-    collectPickups(state)
 
-    if (findCollision(state)) {
-      killPlayer(state)
-      applyDeathPenalty(state)
-    } else if (state.distance >= TRACK_LENGTH) {
-      state.phase = 'finished'
-    }
+    const gate = nextClimbGate(state.distance)
+    if (gate) {
+      triggeredClimbs.add(gate.trackY)
+      enterClimb(state, gate)
+      showLandmarkCaption('climb.title', 'climb.hint')
+    } else {
+      updateMovers(state, dt)
+      updatePlayer(state, input, dt)
+      collectPickups(state)
 
-    for (const landmark of getLevel(currentLevelId).landmarks) {
-      if (landmarksShown.has(landmark.id)) continue
-      if (state.distance >= landmark.trackY - LANDMARK_TRIGGER_AHEAD) {
-        landmarksShown.add(landmark.id)
-        showLandmarkCaption(landmark.nameKey, landmark.factKey)
-        recordSeenLandmark(save, landmark.id)
+      if (findCollision(state)) {
+        killPlayer(state)
+        applyDeathPenalty(state)
+      } else if (state.distance >= TRACK_LENGTH) {
+        state.phase = 'finished'
       }
+
+      for (const landmark of getLevel(currentLevelId).landmarks) {
+        if (landmarksShown.has(landmark.id)) continue
+        if (state.distance >= landmark.trackY - LANDMARK_TRIGGER_AHEAD) {
+          landmarksShown.add(landmark.id)
+          showLandmarkCaption(landmark.nameKey, landmark.factKey)
+          recordSeenLandmark(save, landmark.id)
+        }
+      }
+
+      // Climb-only input flags never carry into the run.
+      input.climbQueued = false
+      input.climbLane = 0
     }
   }
 
@@ -232,6 +270,7 @@ function render(): void {
     updateStage(stage, state)
     if (entities) updateEntities(entities, state)
     if (player3d) updatePlayer3D(player3d, state)
+    if (climbView) updateClimbView(climbView, state)
     updateHud(state, bestScore())
     if (state.lastCollected.seq !== lastToastSeq && state.lastCollected.kind !== '') {
       lastToastSeq = state.lastCollected.seq
