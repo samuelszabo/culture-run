@@ -267,6 +267,12 @@
   cursor: default;
 }
 
+.character-card--active {
+  background: #3d1a00;
+  border-color: #ffd740;
+  box-shadow: 0 0 0 3px rgba(255, 215, 64, 0.35);
+}
+
 .character-figure--bear .char-head {
   border-radius: 45% 45% 40% 40%;
   background: #8a5a2b;

@@ -1,3 +1,4 @@
+import { Character } from '../game/types'
 import { Level, createChinaWallLevel } from './china-wall'
 import { Landmark } from './landmark'
 import { SLOVAK_PARADISE_LANDMARKS, createSlovakParadiseLevel } from './slovak-paradise'
@@ -66,4 +67,12 @@ export function getLevel(id: string): LevelDef {
 export const COUNTRY_LEVEL: Record<string, string> = {
   china: 'china-wall',
   slovakia: 'slovak-paradise',
+}
+
+// Characters offered in each country's wardrobe. The bear is the Slovak-themed
+// playable character (shown locked there until earned); boy/girl/cat are the
+// base characters. China deliberately offers only the base trio.
+export const COUNTRY_CHARACTERS: Record<string, Character[]> = {
+  china: ['boy', 'girl', 'cat'],
+  slovakia: ['boy', 'girl', 'cat', 'bear'],
 }

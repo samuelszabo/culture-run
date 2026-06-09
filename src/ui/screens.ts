@@ -2,14 +2,15 @@ import './screens.css'
 import { SaveData, Character, RewardId } from '../game/types'
 import { REWARDS } from '../game/rewards'
 import { ALBUM_ENTRIES } from '../game/album'
-import { COUNTRY_LEVEL, getLevel } from '../levels/registry'
+import { COUNTRY_CHARACTERS, COUNTRY_LEVEL, getLevel } from '../levels/registry'
 import { t } from '../i18n/strings'
 
 export interface ScreensCallbacks {
   onStartGame(levelId: string): void
 }
 
-type Screen = 'home' | 'character' | 'country' | 'area' | 'wardrobe' | 'album'
+// 'area' is each country's own wardrobe (character + that country's rewards + play).
+type Screen = 'home' | 'country' | 'area' | 'album'
 
 let ui: HTMLElement
 let save: SaveData
@@ -33,12 +34,6 @@ const BASE_CHARACTERS: Character[] = ['boy', 'girl', 'cat']
 function isCharacterUnlocked(ch: Character): boolean {
   if (ch === 'bear') return save.unlockedRewards.includes('playable-bear')
   return true
-}
-
-function availableCharacters(): Character[] {
-  const list: Character[] = [...BASE_CHARACTERS]
-  if (isCharacterUnlocked('bear')) list.push('bear')
-  return list
 }
 
 export function initScreens(
@@ -66,10 +61,8 @@ function renderScreen(screen: Screen): void {
   ui.innerHTML = ''
   switch (screen) {
     case 'home': renderHome(); break
-    case 'character': renderCharacter(); break
     case 'country': renderCountry(); break
-    case 'area': renderArea(); break
-    case 'wardrobe': renderWardrobe(); break
+    case 'area': renderCountryWardrobe(); break
     case 'album': renderAlbum(); break
   }
 }
@@ -83,47 +76,17 @@ function renderHome(): void {
 
   const actions = div('button-group')
 
+  // Wardrobe is now per-country (picked after choosing a country), so Play goes
+  // straight to the country grid.
   const playBtn = button('btn btn-primary', t('menu.play'))
-  playBtn.addEventListener('click', () => {
-    if (save.character === null) {
-      renderScreen('character')
-    } else {
-      renderScreen('country')
-    }
-  })
+  playBtn.addEventListener('click', () => renderScreen('country'))
   actions.appendChild(playBtn)
-
-  const wardrobeBtn = button('btn btn-secondary', t('menu.wardrobe'))
-  wardrobeBtn.addEventListener('click', () => renderScreen('wardrobe'))
-  actions.appendChild(wardrobeBtn)
 
   const albumBtn = button('btn btn-secondary', t('menu.album'))
   albumBtn.addEventListener('click', () => renderScreen('album'))
   actions.appendChild(albumBtn)
 
   wrap.appendChild(actions)
-  ui.appendChild(wrap)
-}
-
-function renderCharacter(): void {
-  const wrap = div('screen screen-character')
-
-  const title = el('h2', 'screen-title')
-  title.textContent = t('character.title')
-  wrap.appendChild(title)
-
-  const grid = div('character-grid')
-
-  for (const ch of BASE_CHARACTERS) grid.appendChild(characterCard(ch))
-  // Bear is shown as a locked teaser until the playable-bear reward is earned.
-  grid.appendChild(characterCard('bear'))
-
-  wrap.appendChild(grid)
-
-  const backBtn = button('btn btn-back', t('common.back'))
-  backBtn.addEventListener('click', () => renderScreen('home'))
-  wrap.appendChild(backBtn)
-
   ui.appendChild(wrap)
 }
 
@@ -154,7 +117,8 @@ function createCharacterFigure(character: Character): HTMLDivElement {
 }
 
 function characterCard(character: Character): HTMLElement {
-  const card = div('character-card')
+  const active = save.character === character
+  const card = div(`character-card${active ? ' character-card--active' : ''}`)
   const unlocked = isCharacterUnlocked(character)
 
   const label = el('span', 'character-label')
@@ -177,7 +141,7 @@ function characterCard(character: Character): HTMLElement {
   const selectCharacter = () => {
     save.character = character
     persist()
-    renderScreen('country')
+    renderScreen('area') // stay in the country wardrobe
   }
 
   card.addEventListener('click', selectCharacter)
@@ -250,86 +214,41 @@ function renderCountry(): void {
   ui.appendChild(wrap)
 }
 
-function renderArea(): void {
-  const wrap = div('screen screen-area')
-
-  const title = el('h2', 'screen-title')
-  title.textContent = t('area.title')
-  wrap.appendChild(title)
-
+// Each country's own wardrobe: pick a character from that country, toggle that
+// country's rewards, read the level intro, and play.
+function renderCountryWardrobe(): void {
   const levelId = COUNTRY_LEVEL[selectedCountry] ?? 'china-wall'
   const level = getLevel(levelId)
+  const chars = COUNTRY_CHARACTERS[selectedCountry] ?? BASE_CHARACTERS
 
-  const card = div('area-card')
+  // Keep the saved character valid for this country (China has no bear, etc.).
+  if (save.character === null || !chars.includes(save.character)) {
+    save.character = chars[0]
+    persist()
+  }
 
-  const areaName = el('h3', 'area-name')
-  areaName.textContent = t(level.areaNameKey)
-  card.appendChild(areaName)
-
-  const info = el('p', 'area-info')
-  info.textContent = t(level.areaInfoKey)
-  card.appendChild(info)
-
-  const playBtn = button('btn btn-primary', t('menu.play'))
-  playBtn.addEventListener('click', () => {
-    hideScreens()
-    callbacks.onStartGame(levelId)
-  })
-  card.appendChild(playBtn)
-
-  wrap.appendChild(card)
-
-  const backBtn = button('btn btn-back', t('common.back'))
-  backBtn.addEventListener('click', () => renderScreen('country'))
-  wrap.appendChild(backBtn)
-
-  ui.appendChild(wrap)
-}
-
-function renderWardrobe(): void {
   const wrap = div('screen screen-wardrobe')
 
   const title = el('h2', 'screen-title')
-  title.textContent = t('wardrobe.title')
+  title.textContent = t(level.areaNameKey)
   wrap.appendChild(title)
 
-  const preview = div('wardrobe-preview')
-  const wardrobeCharacter = save.character ?? 'boy'
-  preview.appendChild(createCharacterFigure(wardrobeCharacter))
-  wrap.appendChild(preview)
+  const info = el('p', 'area-info')
+  info.textContent = t(level.areaInfoKey)
+  wrap.appendChild(info)
 
-  const characterLabel = el('h3', 'screen-title')
-  characterLabel.textContent = t('wardrobe.character')
-  wrap.appendChild(characterLabel)
+  const charLabel = el('h3', 'screen-title')
+  charLabel.textContent = t('wardrobe.character')
+  wrap.appendChild(charLabel)
 
-  const characterSwitcher = div('wardrobe-character-switcher')
-  for (const ch of availableCharacters()) {
-    const miniCard = div(`wardrobe-mini-card${ch === wardrobeCharacter ? ' wardrobe-mini-card--active' : ''}`)
-    miniCard.setAttribute('role', 'button')
-    miniCard.setAttribute('tabindex', '0')
-    miniCard.setAttribute('aria-pressed', String(ch === wardrobeCharacter))
-    const miniFigure = createCharacterFigure(ch)
-    miniFigure.classList.add('character-figure--mini')
-    miniCard.appendChild(miniFigure)
-    const miniLabel = el('span', 'wardrobe-mini-label')
-    miniLabel.textContent = t(`character.${ch}`)
-    miniCard.appendChild(miniLabel)
-    const selectCh = () => {
-      save.character = ch
-      persist()
-      renderScreen('wardrobe')
-    }
-    miniCard.addEventListener('click', selectCh)
-    miniCard.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') selectCh()
-    })
-    characterSwitcher.appendChild(miniCard)
-  }
-  wrap.appendChild(characterSwitcher)
+  const grid = div('character-grid')
+  for (const ch of chars) grid.appendChild(characterCard(ch))
+  wrap.appendChild(grid)
 
   const list = div('reward-list')
-
   for (const reward of REWARDS) {
+    if (reward.country !== selectedCountry) continue
+
     const unlocked = save.unlockedRewards.includes(reward.id)
     const item = div(`reward-item${unlocked ? ' reward-item--unlocked' : ' reward-item--locked'}`)
 
@@ -350,7 +269,6 @@ function renderWardrobe(): void {
       hint.textContent = t(reward.hintKey)
       item.appendChild(hint)
     } else if (reward.equippable === false) {
-      // Character-unlock rewards (e.g. playable bear): no equip toggle.
       const status = el('span', 'reward-hint')
       status.textContent = t('wardrobe.unlocked')
       item.appendChild(status)
@@ -361,24 +279,27 @@ function renderWardrobe(): void {
       toggle.setAttribute('aria-pressed', String(equipped))
       toggle.addEventListener('click', () => {
         const idx = save.equippedRewards.indexOf(reward.id)
-        if (idx >= 0) {
-          save.equippedRewards.splice(idx, 1)
-        } else {
-          save.equippedRewards.push(reward.id)
-        }
+        if (idx >= 0) save.equippedRewards.splice(idx, 1)
+        else save.equippedRewards.push(reward.id)
         persist()
-        renderScreen('wardrobe')
+        renderScreen('area')
       })
       item.appendChild(toggle)
     }
 
     list.appendChild(item)
   }
-
   wrap.appendChild(list)
 
+  const playBtn = button('btn btn-primary', t('menu.play'))
+  playBtn.addEventListener('click', () => {
+    hideScreens()
+    callbacks.onStartGame(levelId)
+  })
+  wrap.appendChild(playBtn)
+
   const backBtn = button('btn btn-back', t('common.back'))
-  backBtn.addEventListener('click', () => renderScreen('home'))
+  backBtn.addEventListener('click', () => renderScreen('country'))
   wrap.appendChild(backBtn)
 
   ui.appendChild(wrap)
