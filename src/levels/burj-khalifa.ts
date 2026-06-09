@@ -62,8 +62,9 @@ function createCloudFeatures(): Features {
     trackY += spacing + (rand() - 0.5) * 60
     if (trackY > FEATURE_END) break
 
-    // No towers in the opening teaching zone; ~1/3 of later features are towers.
-    const towerChance = progress < 0.12 ? 0 : 0.32
+    // No towers in the opening teaching zone; after that roughly half the
+    // features are skyscraper tops to dodge (the rest are jump-gaps).
+    const towerChance = progress < 0.12 ? 0 : 0.55
     if (rand() < towerChance) {
       towerSide = -towerSide
       const cx =
@@ -82,13 +83,37 @@ function createCloudFeatures(): Features {
   return { gaps, towers }
 }
 
-// Lateral position that is safe at `trackY`: if a tower-top sits near it, hug the
-// open lane on the far side; otherwise the centre is clear (gaps are full-width
-// but harmless mid-jump, so a centred pickup is grabbed as you leap).
-function safeXAt(trackY: number, towers: Obstacle[]): number {
-  for (const tw of towers) {
-    if (Math.abs(tw.trackY - trackY) < 130) {
-      return tw.x < ROAD_CENTER ? ROAD_RIGHT - 70 : ROAD_LEFT + 70
+// Centre of the lane NOT blocked by a given tower-top.
+function openLaneCenter(tw: Obstacle): number {
+  return tw.x < ROAD_CENTER
+    ? (tw.x + tw.w / 2 + ROAD_RIGHT) / 2
+    : (ROAD_LEFT + tw.x - tw.w / 2) / 2
+}
+
+interface Waypoint {
+  trackY: number
+  x: number
+}
+
+// The navigable route: at each tower-top the safe x is its open lane; the path
+// smoothly weaves between those. Food follows this, so it snakes around the
+// skyscrapers exactly like the China level's pickups follow the gap path.
+function buildSafePath(towers: Obstacle[]): Waypoint[] {
+  return towers
+    .map((tw) => ({ trackY: tw.trackY, x: openLaneCenter(tw) }))
+    .sort((a, b) => a.trackY - b.trackY)
+}
+
+function pathXAt(trackY: number, path: Waypoint[]): number {
+  if (path.length === 0) return ROAD_CENTER
+  if (trackY <= path[0].trackY) return path[0].x
+  if (trackY >= path[path.length - 1].trackY) return path[path.length - 1].x
+  for (let i = 0; i < path.length - 1; i++) {
+    const a = path[i]
+    const b = path[i + 1]
+    if (trackY >= a.trackY && trackY <= b.trackY) {
+      const t = (trackY - a.trackY) / (b.trackY - a.trackY)
+      return a.x + t * (b.x - a.x)
     }
   }
   return ROAD_CENTER
@@ -100,18 +125,18 @@ const PICKUP_POINTS = 15
 // thresholds line up across levels. Asserted in tests/level-dubai.test.ts.
 const PICKUP_TARGET = 72
 
-// Food sits in a tidy trail along the navigable path — like the China/Slovak
-// levels — not scattered across the road. Lateral position is always the safe
-// lane (centre, or the open lane beside a tower). Spacing alternates between
-// single pickups and short tight clusters so the trail reads naturally.
+// Food follows the navigable route in a tidy trail — like the China/Slovak
+// levels — weaving around the skyscrapers rather than running dead straight.
+// Spacing alternates between single pickups and short tight clusters.
 function createCloudCollectibles(towers: Obstacle[]): Collectible[] {
   const rand = mulberry32(0x5eed42)
+  const path = buildSafePath(towers)
   const collectibles: Collectible[] = []
   let trackY = 1500
   let i = 0
   let inCluster = 0
   while (trackY <= 18500 && collectibles.length < PICKUP_TARGET) {
-    const x = safeXAt(trackY, towers)
+    const x = pathXAt(trackY, path)
     collectibles.push({
       kind: FOOD_KINDS[i % FOOD_KINDS.length],
       x,
