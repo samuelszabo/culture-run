@@ -321,6 +321,72 @@
   border-radius: 50%;
 }
 
+.character-figure--unicorn .char-head {
+  border-radius: 50% 50% 40% 40%;
+  background: #fdfdff;
+}
+
+.character-figure--unicorn .char-body {
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 32px;
+  background: #fdfdff;
+  border-radius: 4px;
+}
+
+.character-figure--unicorn .char-legs {
+  background: #e8e8f0;
+}
+
+.character-figure--unicorn .cat-ear {
+  border-bottom-color: #fdfdff;
+}
+
+.unicorn-horn {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 18px solid #ffd23f;
+}
+
+.unicorn-mane {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 10px;
+  height: 44px;
+  border-radius: 6px;
+  background: linear-gradient(
+    180deg,
+    #ff4d4d 0%, #ff9f1c 20%, #ffe600 40%,
+    #2ecc71 60%, #3498db 80%, #9b59b6 100%
+  );
+}
+
+.unicorn-tail {
+  position: absolute;
+  bottom: 0;
+  right: -8px;
+  width: 10px;
+  height: 30px;
+  border-radius: 4px 4px 6px 6px;
+  transform: rotate(12deg);
+  transform-origin: bottom center;
+  background: linear-gradient(
+    180deg,
+    #ff4d4d 0%, #ff9f1c 25%, #ffe600 50%,
+    #2ecc71 70%, #3498db 100%
+  );
+}
+
 .country-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

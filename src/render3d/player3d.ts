@@ -59,8 +59,38 @@ export interface Player3D {
   squirrelTailSegments: THREE.Mesh[]
   // Kroj cosmetic
   krojGroup: THREE.Group | null
+  // Unicorn (quadruped) parts
+  unicornManeSegments: THREE.Mesh[]
+  unicornTailSegments: THREE.Mesh[]
+  // Rainbow-wings cosmetic
+  rainbowWingsGroup: THREE.Group | null
+  rainbowWingL: THREE.Group | null
+  rainbowWingR: THREE.Group | null
+  // Rainbow-tail cosmetic
+  rainbowTailGroup: THREE.Group | null
+  rainbowTailSegments: THREE.Mesh[]
+  // Falcon-pet companion
+  falconGroup: THREE.Group | null
+  falconWingL: THREE.Mesh | null
+  falconWingR: THREE.Mesh | null
   scene: THREE.Scene
 }
+
+// Rainbow palette (7 colours), reused for unicorn mane/tail and rainbow cosmetics
+const RAINBOW = [
+  0xe53935, // red
+  0xfb8c00, // orange
+  0xfdd835, // yellow
+  0x43a047, // green
+  0x1e88e5, // blue
+  0x3949ab, // indigo
+  0x8e24aa, // violet
+] as const
+
+// Unicorn colours
+const UNICORN_WHITE = 0xfdfdff
+const UNICORN_GOLD = 0xf2c14e
+const UNICORN_EYE = 0x2b2b40
 
 const H = PLAYER_WORLD_HEIGHT
 
@@ -127,9 +157,9 @@ function makeLimbGroup(mesh: THREE.Mesh, limbHeight: number, pivotY: number): TH
   return g
 }
 
-// Build one cat leg group: pivot at body underside (CAT_BODY_Y), leg hangs down
-function makeCatLegGroup(x: number, z: number): THREE.Group {
-  const legMesh = box(CAT_LEG_W, CAT_LEG_H, CAT_LEG_W, CAT_ORANGE)
+// Build one quadruped leg group: pivot at body underside (CAT_BODY_Y), leg hangs down
+function makeCatLegGroup(x: number, z: number, color: number = CAT_ORANGE): THREE.Group {
+  const legMesh = box(CAT_LEG_W, CAT_LEG_H, CAT_LEG_W, color)
   const g = makeLimbGroup(legMesh, CAT_LEG_H, CAT_BODY_Y)
   g.position.set(x, 0, z)
   return g
@@ -504,22 +534,143 @@ function buildKroj(isCat: boolean): THREE.Group {
   return g
 }
 
+// Rainbow wings cosmetic — a pair of wings on the player's back, segments
+// cycling rainbow colours. Built once and toggled by `state.equipped`.
+function buildRainbowWings(isQuad: boolean): {
+  wingsGroup: THREE.Group
+  wingL: THREE.Group
+  wingR: THREE.Group
+} {
+  const wingsGroup = new THREE.Group()
+
+  // Anchor on the back of the torso.
+  const baseY = isQuad ? CAT_BODY_Y + CAT_BODY_H * 0.5 : TORSO_Y_BOTTOM + TORSO_H * 0.55
+  const baseZ = isQuad ? CAT_BODY_Z : BODY_D * 0.35
+  wingsGroup.position.set(0, baseY, baseZ)
+
+  const featherCount = RAINBOW.length
+  const featherW = H * 0.07
+  const featherH0 = H * 0.30
+
+  const makeWing = (dir: number): THREE.Group => {
+    const wing = new THREE.Group()
+    for (let i = 0; i < featherCount; i++) {
+      const t = i / (featherCount - 1)
+      const fh = featherH0 * (1 - t * 0.45)
+      const feather = box(featherW, fh, featherW * 0.4, RAINBOW[i])
+      // Fan the feathers outward and upward from the shoulder.
+      const spread = H * 0.06 + t * H * 0.22
+      feather.position.set(dir * spread, fh * 0.5 - t * H * 0.04, 0)
+      feather.rotation.z = dir * (0.2 + t * 0.5)
+      wing.add(feather)
+    }
+    return wing
+  }
+
+  const wingL = makeWing(-1)
+  const wingR = makeWing(1)
+  wingsGroup.add(wingL)
+  wingsGroup.add(wingR)
+
+  return { wingsGroup, wingL, wingR }
+}
+
+// Rainbow-tail cosmetic — a flowing rainbow trail behind the player, modelled
+// on the dragon-tail (segmented trail that sways) but coloured across the rainbow.
+function buildRainbowTail(): { tailGroup: THREE.Group; segments: THREE.Mesh[] } {
+  const tailGroup = new THREE.Group()
+  const segments: THREE.Mesh[] = []
+  const segmentCount = 9
+  const headSegSize = H * 0.18
+  for (let i = 0; i < segmentCount; i++) {
+    const t = i / (segmentCount - 1)
+    const size = headSegSize * (1 - t * 0.5)
+    const color = RAINBOW[i % RAINBOW.length]
+    const seg = box(size, size, size, color)
+    tailGroup.add(seg)
+    segments.push(seg)
+  }
+  return { tailGroup, segments }
+}
+
+// Falcon-pet companion — a small brown bird that flies/follows behind the player.
+// Modelled on the cat-pet / bear-cub / squirrel companions.
+const FALCON_BODY = 0x6b4f33
+const FALCON_BELLY = 0xd8c4a0
+const FALCON_BEAK = 0xf2c14e
+
+function buildFalcon(): { petGroup: THREE.Group; wingL: THREE.Mesh; wingR: THREE.Mesh } {
+  const petGroup = new THREE.Group()
+
+  const bodyL = H * 0.26
+  const bodyH = H * 0.16
+  const bodyW = H * 0.14
+  const bodyY = H * 0.4
+
+  // Body (pointed toward −z front by tapering not needed; a small box)
+  const bodyMesh = box(bodyW, bodyH, bodyL, FALCON_BODY)
+  bodyMesh.position.set(0, bodyY, 0)
+  petGroup.add(bodyMesh)
+
+  // Pale belly underside
+  const belly = box(bodyW * 0.7, bodyH * 0.12, bodyL * 0.7, FALCON_BELLY)
+  belly.position.set(0, bodyY - bodyH / 2 - bodyH * 0.04, 0)
+  petGroup.add(belly)
+
+  // Head at the −z front
+  const headS = H * 0.13
+  const headZ = -(bodyL / 2 + headS * 0.3)
+  const head = box(headS, headS, headS, FALCON_BODY)
+  head.position.set(0, bodyY + bodyH * 0.2, headZ)
+  petGroup.add(head)
+
+  // Hooked beak (small gold box, slightly down-angled) on the −z face of head
+  const beak = box(H * 0.04, H * 0.05, H * 0.08, FALCON_BEAK)
+  beak.position.set(0, bodyY + bodyH * 0.12, headZ - headS / 2 - H * 0.03)
+  beak.rotation.x = -0.35
+  petGroup.add(beak)
+
+  // Tail feathers at the +z rear
+  const tail = box(bodyW * 0.7, H * 0.03, bodyL * 0.5, FALCON_BODY)
+  tail.position.set(0, bodyY, bodyL / 2 + bodyL * 0.2)
+  petGroup.add(tail)
+
+  // Pointed wings — thin angled boxes, pivoted at the shoulder so they can flap.
+  const wingLen = H * 0.30
+  const makeWing = (dir: number): THREE.Mesh => {
+    const wing = box(wingLen, H * 0.02, bodyL * 0.6, FALCON_BODY)
+    // Shift geometry so the inner edge sits at the pivot.
+    wing.geometry.translate((dir * wingLen) / 2, 0, 0)
+    wing.position.set(dir * bodyW * 0.45, bodyY + bodyH * 0.2, 0)
+    petGroup.add(wing)
+    return wing
+  }
+  const wingL = makeWing(-1)
+  const wingR = makeWing(1)
+
+  petGroup.scale.setScalar(0.55)
+  return { petGroup, wingL, wingR }
+}
+
 export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
   const isCat = state.character === 'cat'
   const isBear = state.character === 'bear'
+  const isUnicorn = state.character === 'unicorn'
+  // Quadrupeds (cat + unicorn) share the 4-leg layout and animation hooks.
+  const isQuad = isCat || isUnicorn
   const group = new THREE.Group()
   const body = new THREE.Group()
   group.add(body)
 
   // --- Head ---
-  const headColor = isCat ? CAT_ORANGE : isBear ? BEAR_BODY_COLOR : 0xf5c07a
+  const headColor = isCat ? CAT_ORANGE : isBear ? BEAR_BODY_COLOR : isUnicorn ? UNICORN_WHITE : 0xf5c07a
   const headMesh = box(
-    isCat ? CAT_HEAD_S : BODY_W * 0.88,
-    isCat ? CAT_HEAD_S : HEAD_H,
-    isCat ? CAT_HEAD_S : BODY_D * 0.88,
+    isQuad ? CAT_HEAD_S : BODY_W * 0.88,
+    isQuad ? CAT_HEAD_S : HEAD_H,
+    isQuad ? CAT_HEAD_S : BODY_D * 0.88,
     headColor,
   )
-  if (isCat) {
+  if (isQuad) {
     headMesh.position.set(0, CAT_HEAD_Y, CAT_HEAD_Z)
   } else {
     headMesh.position.set(0, HEAD_Y_CENTER, 0)
@@ -550,13 +701,15 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     ? CAT_ORANGE
     : isBear
       ? BEAR_BODY_COLOR
-      : state.character === 'boy'
-        ? 0x3a7bd5
-        : 0xe87fac
-  const torsoMesh = isCat
+      : isUnicorn
+        ? UNICORN_WHITE
+        : state.character === 'boy'
+          ? 0x3a7bd5
+          : 0xe87fac
+  const torsoMesh = isQuad
     ? box(CAT_BODY_W, CAT_BODY_H, CAT_BODY_L, torsoColor)
     : box(BODY_W, TORSO_H, BODY_D, torsoColor)
-  if (isCat) {
+  if (isQuad) {
     torsoMesh.position.set(0, CAT_BODY_Y, CAT_BODY_Z)
   } else {
     torsoMesh.position.set(0, TORSO_Y_BOTTOM + TORSO_H / 2, 0)
@@ -572,40 +725,41 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     body.add(belly)
   }
 
-  // --- Biped limbs (used for boy/girl/bear; created-but-unused for cat) ---
-  const limbSkinColor = isCat ? CAT_ORANGE : isBear ? BEAR_LIMB_COLOR : 0xf5c07a
-  const legColor = isCat ? CAT_ORANGE : isBear ? BEAR_LIMB_COLOR : 0x2c3e7a
+  // --- Biped limbs (used for boy/girl/bear; created-but-unused for quadrupeds) ---
+  const limbSkinColor = isCat ? CAT_ORANGE : isBear ? BEAR_LIMB_COLOR : isUnicorn ? UNICORN_WHITE : 0xf5c07a
+  const legColor = isCat ? CAT_ORANGE : isBear ? BEAR_LIMB_COLOR : isUnicorn ? UNICORN_WHITE : 0x2c3e7a
 
   const armMesh = box(ARM_W, ARM_H, ARM_W, limbSkinColor)
   const armLGroup = makeLimbGroup(armMesh, ARM_H, TORSO_Y_TOP - ARM_H * 0.1)
-  if (!isCat) armLGroup.position.setX(-(BODY_W / 2 + ARM_W / 2))
+  if (!isQuad) armLGroup.position.setX(-(BODY_W / 2 + ARM_W / 2))
   body.add(armLGroup)
 
   const armMeshR = box(ARM_W, ARM_H, ARM_W, limbSkinColor)
   const armRGroup = makeLimbGroup(armMeshR, ARM_H, TORSO_Y_TOP - ARM_H * 0.1)
-  if (!isCat) armRGroup.position.setX(BODY_W / 2 + ARM_W / 2)
+  if (!isQuad) armRGroup.position.setX(BODY_W / 2 + ARM_W / 2)
   body.add(armRGroup)
 
   const legMeshL = box(LEG_W, LEG_H, LEG_W, legColor)
   const legLGroup = makeLimbGroup(legMeshL, LEG_H, LEG_Y_TOP)
-  if (!isCat) legLGroup.position.setX(-LEG_W * 0.7)
+  if (!isQuad) legLGroup.position.setX(-LEG_W * 0.7)
   body.add(legLGroup)
 
   const legMeshR = box(LEG_W, LEG_H, LEG_W, legColor)
   const legRGroup = makeLimbGroup(legMeshR, LEG_H, LEG_Y_TOP)
-  if (!isCat) legRGroup.position.setX(LEG_W * 0.7)
+  if (!isQuad) legRGroup.position.setX(LEG_W * 0.7)
   body.add(legRGroup)
 
-  // --- Cat-dedicated 4 legs ---
+  // --- Quadruped 4 legs (cat + unicorn) ---
   // Diagonal trot pairs: [0]=front-left, [1]=front-right, [2]=rear-left, [3]=rear-right
   // FL+RR swing one direction, FR+RL swing opposite — natural quadruped trot
   const catLegs: THREE.Group[] = []
-  if (isCat) {
+  if (isQuad) {
+    const quadLegColor = isUnicorn ? UNICORN_WHITE : CAT_ORANGE
     const halfX = CAT_BODY_W / 2 + CAT_LEG_W * 0.1
-    catLegs.push(makeCatLegGroup(-halfX, CAT_FRONT_LEG_Z))  // 0: front-left
-    catLegs.push(makeCatLegGroup( halfX, CAT_FRONT_LEG_Z))  // 1: front-right
-    catLegs.push(makeCatLegGroup(-halfX, CAT_REAR_LEG_Z))   // 2: rear-left
-    catLegs.push(makeCatLegGroup( halfX, CAT_REAR_LEG_Z))   // 3: rear-right
+    catLegs.push(makeCatLegGroup(-halfX, CAT_FRONT_LEG_Z, quadLegColor))  // 0: front-left
+    catLegs.push(makeCatLegGroup( halfX, CAT_FRONT_LEG_Z, quadLegColor))  // 1: front-right
+    catLegs.push(makeCatLegGroup(-halfX, CAT_REAR_LEG_Z, quadLegColor))   // 2: rear-left
+    catLegs.push(makeCatLegGroup( halfX, CAT_REAR_LEG_Z, quadLegColor))   // 3: rear-right
     for (const lg of catLegs) body.add(lg)
   }
 
@@ -640,8 +794,8 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     const earColor = 0xf5f0e0
     const innerColor = 0xf4a0b0
 
-    if (isCat) {
-      // Ears anchor to cat head — top-front (−z) face, slightly inset from head sides
+    if (isQuad) {
+      // Ears anchor to quadruped head — top-front (−z) face, slightly inset from head sides
       const earTopY = CAT_HEAD_Y + CAT_HEAD_S / 2 + earH / 2 - earH * 0.15
       labubuEarL = box(earW, earH, earW * 0.6, earColor)
       labubuEarL.position.set(-(CAT_HEAD_S * 0.25), earTopY, CAT_HEAD_Z)
@@ -770,6 +924,67 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     }
   }
 
+  // --- Unicorn-specific parts: horn, eyes, rainbow mane, rainbow tail ---
+  const unicornManeSegments: THREE.Mesh[] = []
+  const unicornTailSegments: THREE.Mesh[] = []
+
+  if (isUnicorn) {
+    // Gold spiral horn (cone) on the forehead, tilting slightly forward (−z).
+    const hornH = CAT_HEAD_S * 0.9
+    const hornR = CAT_HEAD_S * 0.16
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(hornR, hornH, 7), mat(UNICORN_GOLD))
+    horn.position.set(0, CAT_HEAD_Y + CAT_HEAD_S / 2 + hornH * 0.35, CAT_HEAD_Z - CAT_HEAD_S * 0.18)
+    horn.rotation.x = -0.35
+    body.add(horn)
+    // Spiral ridges: a few thin gold rings stacked up the horn.
+    for (let i = 0; i < 3; i++) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(hornR * (0.85 - i * 0.22), hornR * 0.18, 5, 8),
+        mat(0xd9a23a),
+      )
+      const ry = CAT_HEAD_Y + CAT_HEAD_S / 2 + hornH * (0.12 + i * 0.26)
+      ring.position.set(0, ry, CAT_HEAD_Z - CAT_HEAD_S * 0.18 - (ry - CAT_HEAD_Y) * 0.18)
+      ring.rotation.x = Math.PI / 2 - 0.35
+      body.add(ring)
+    }
+
+    // Big friendly eyes on the −z face of the head.
+    const eyeS = CAT_HEAD_S * 0.18
+    const eyeFaceZ = CAT_HEAD_Z - CAT_HEAD_S / 2 - H * 0.005
+    for (const ex of [-CAT_HEAD_S * 0.24, CAT_HEAD_S * 0.24]) {
+      const eyeWhite = box(eyeS, eyeS, H * 0.02, 0xffffff)
+      eyeWhite.position.set(ex, CAT_HEAD_Y + CAT_HEAD_S * 0.05, eyeFaceZ)
+      body.add(eyeWhite)
+      const pupil = box(eyeS * 0.5, eyeS * 0.6, H * 0.02, UNICORN_EYE)
+      pupil.position.set(ex, CAT_HEAD_Y + CAT_HEAD_S * 0.05, eyeFaceZ - H * 0.005)
+      body.add(pupil)
+    }
+
+    // Pink snout/nose nub on the −z face.
+    const nose = box(CAT_HEAD_S * 0.5, CAT_HEAD_S * 0.22, H * 0.05, 0xf6d2dd)
+    nose.position.set(0, CAT_HEAD_Y - CAT_HEAD_S * 0.22, CAT_HEAD_Z - CAT_HEAD_S / 2 - H * 0.02)
+    body.add(nose)
+
+    // Flowing rainbow mane: a row of segments running along the neck/top of head,
+    // from behind the horn back toward the shoulders. Animated to undulate.
+    const maneCount = RAINBOW.length
+    for (let i = 0; i < maneCount; i++) {
+      const size = H * 0.10 * (1 - i * 0.04)
+      const seg = box(size, size, size, RAINBOW[i])
+      body.add(seg)
+      unicornManeSegments.push(seg)
+    }
+
+    // Flowing rainbow tail at the +z rear, cycling the rainbow colours.
+    const uTailCount = RAINBOW.length
+    for (let i = 0; i < uTailCount; i++) {
+      const size = H * 0.12 * (1 - i * 0.07)
+      const seg = box(size, size, size, RAINBOW[i])
+      body.add(seg)
+      unicornTailSegments.push(seg)
+    }
+  }
+
   // --- Dragon cosmetic ---
   let dragonGroup: THREE.Group | null = null
   const dragonSegments: THREE.Mesh[] = []
@@ -868,6 +1083,44 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     body.add(krojGroup)
   }
 
+  // --- Rainbow-wings cosmetic ---
+  let rainbowWingsGroup: THREE.Group | null = null
+  let rainbowWingL: THREE.Group | null = null
+  let rainbowWingR: THREE.Group | null = null
+
+  if (state.equipped.includes('rainbow-wings')) {
+    const built = buildRainbowWings(isQuad)
+    rainbowWingsGroup = built.wingsGroup
+    rainbowWingL = built.wingL
+    rainbowWingR = built.wingR
+    body.add(rainbowWingsGroup)
+  }
+
+  // --- Rainbow-tail cosmetic (modelled on dragon-tail) ---
+  let rainbowTailGroup: THREE.Group | null = null
+  let rainbowTailSegments: THREE.Mesh[] = []
+
+  if (state.equipped.includes('rainbow-tail')) {
+    const built = buildRainbowTail()
+    rainbowTailGroup = built.tailGroup
+    rainbowTailSegments = built.segments
+    group.add(rainbowTailGroup)
+  }
+
+  // --- Falcon-pet companion ---
+  let falconGroup: THREE.Group | null = null
+  let falconWingL: THREE.Mesh | null = null
+  let falconWingR: THREE.Mesh | null = null
+
+  if (state.equipped.includes('falcon-pet')) {
+    const built = buildFalcon()
+    falconGroup = built.petGroup
+    falconWingL = built.wingL
+    falconWingR = built.wingR
+    falconGroup.position.set(0.55, 1.4, 1.3)
+    group.add(falconGroup)
+  }
+
   // --- Bear chaser ---
   let chaserGroup: THREE.Group | null = null
   let chaserLegs: THREE.Group[] = []
@@ -929,6 +1182,16 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     squirrelLegs,
     squirrelTailSegments,
     krojGroup,
+    unicornManeSegments,
+    unicornTailSegments,
+    rainbowWingsGroup,
+    rainbowWingL,
+    rainbowWingR,
+    rainbowTailGroup,
+    rainbowTailSegments,
+    falconGroup,
+    falconWingL,
+    falconWingR,
     scene,
   }
 }
@@ -937,6 +1200,9 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
   const { group, body, armLGroup, armRGroup, legLGroup, legRGroup, dragonGroup, dragonSegments, catLegs } = p
   const { phase, player, elapsed, distance, deathPauseFor } = state
   const isCat = state.character === 'cat'
+  const isUnicorn = state.character === 'unicorn'
+  // Quadrupeds (cat + unicorn) share the 4-leg animation hooks.
+  const isQuad = isCat || isUnicorn
 
   // Treat the brief death-pause of a mid-climb hit as still climbing, so the
   // player stays on the ladder instead of dropping to the gate base off-camera.
@@ -977,7 +1243,7 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
 
     // Reaching climb cycle keyed off how far up the player has tapped.
     const reach = Math.sin(c.progress * 0.05)
-    if (isCat) {
+    if (isQuad) {
       catLegs[0].rotation.x = -0.4 - reach * 0.4
       catLegs[1].rotation.x = -0.4 + reach * 0.4
       catLegs[2].rotation.x = -0.2 + reach * 0.4
@@ -991,7 +1257,7 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
   } else if (phase === 'running') {
     const swing = Math.sin(distance * 0.05)
 
-    if (isCat) {
+    if (isQuad) {
       // Quadruped trot: FL+RR vs FR+RL diagonal pairs
       const amp = 0.45
       catLegs[0].rotation.x = -swing * amp   // front-left
@@ -1008,7 +1274,7 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
 
     // Tuck limbs while airborne for a clear jump pose
     if (player.jumpHeight > 0) {
-      if (isCat) {
+      if (isQuad) {
         for (const lg of catLegs) lg.rotation.x = -0.5
       } else {
         legLGroup.rotation.x = -0.7
@@ -1024,7 +1290,7 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
   } else if (phase === 'finished') {
     const bounce = Math.abs(Math.sin(elapsed * 6)) * 0.35
     group.position.y = groundY + bounce
-    if (isCat) {
+    if (isQuad) {
       catLegs[0].rotation.x = -Math.PI * 0.3
       catLegs[1].rotation.x = -Math.PI * 0.3
     } else {
@@ -1050,10 +1316,42 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
     }
   }
 
+  // Unicorn rainbow mane: row of segments running from the head back over the
+  // neck (−z toward shoulders), undulating like flowing hair.
+  if (p.unicornManeSegments.length > 0) {
+    const count = p.unicornManeSegments.length
+    const startZ = CAT_HEAD_Z + CAT_HEAD_S * 0.35
+    const stepZ = (CAT_BODY_Z - startZ) / count
+    const topY = CAT_BODY_Y + CAT_BODY_H * 0.5
+    for (let i = 0; i < count; i++) {
+      const seg = p.unicornManeSegments[i]
+      const t = i / count
+      const wave = Math.sin(elapsed * 4 + i * 0.8) * (0.03 + t * 0.04)
+      const segY = (CAT_HEAD_Y + CAT_HEAD_S * 0.45) + (topY - (CAT_HEAD_Y + CAT_HEAD_S * 0.45)) * t
+      seg.position.set(wave, segY + Math.sin(elapsed * 5 + i) * 0.015, startZ + stepZ * i)
+    }
+  }
+
+  // Unicorn rainbow tail: segments trailing from the +z rear, curving up and back.
+  if (p.unicornTailSegments.length > 0) {
+    const count = p.unicornTailSegments.length
+    const tailRearZ = CAT_BODY_Z + CAT_BODY_L / 2
+    const stepZ = H * 0.11
+    const stepY = H * 0.12
+    for (let i = 0; i < count; i++) {
+      const seg = p.unicornTailSegments[i]
+      const t = (i + 1) / count
+      const wave = Math.sin(elapsed * 4 + i * 0.9) * (0.04 + i * 0.02)
+      const segY = CAT_BODY_Y + t * stepY * count
+      const segZ = tailRearZ + t * stepZ * count
+      seg.position.set(wave, segY, segZ)
+    }
+  }
+
   // Dragon tail animation: trails behind player (+z)
   if (dragonGroup && dragonSegments.length > 0) {
     const segGap = H * 0.18
-    const dragonY = isCat ? CAT_BODY_Y + CAT_BODY_H * 0.5 : TORSO_Y_BOTTOM + TORSO_H * 0.5
+    const dragonY = isQuad ? CAT_BODY_Y + CAT_BODY_H * 0.5 : TORSO_Y_BOTTOM + TORSO_H * 0.5
 
     for (let i = 0; i < dragonSegments.length; i++) {
       const seg = dragonSegments[i]
@@ -1156,6 +1454,43 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
       const segZ = 0.05 + t * 0.28
       seg.position.set(segX, segY, segZ)
     }
+  }
+
+  // Rainbow-wings cosmetic: gentle flapping of the two wing fans.
+  if (p.rainbowWingsGroup && p.rainbowWingL && p.rainbowWingR) {
+    const flap = phase === 'running' ? Math.sin(elapsed * 8) * 0.35 : Math.sin(elapsed * 3) * 0.15
+    // Wings fan out from the back; flap around the z-axis (up/down).
+    p.rainbowWingL.rotation.z = flap
+    p.rainbowWingR.rotation.z = -flap
+  }
+
+  // Rainbow-tail cosmetic: segmented trail swaying behind the player (mirrors dragon-tail).
+  if (p.rainbowTailGroup && p.rainbowTailSegments.length > 0) {
+    const segGap = H * 0.16
+    const tailY = isQuad ? CAT_BODY_Y + CAT_BODY_H * 0.5 : TORSO_Y_BOTTOM + TORSO_H * 0.5
+    for (let i = 0; i < p.rainbowTailSegments.length; i++) {
+      const seg = p.rainbowTailSegments[i]
+      const waveX = Math.sin(elapsed * 4 + i * 0.7) * (0.06 + i * 0.025)
+      const waveY = Math.sin(elapsed * 3.2 + i * 0.5) * (0.02 + i * 0.012)
+      const segZ = (i + 1) * segGap
+      seg.position.set(waveX, tailY + waveY, segZ)
+    }
+  }
+
+  // Falcon-pet companion: flies behind the player, bobbing, with flapping wings.
+  if (p.falconGroup) {
+    const fg = p.falconGroup
+    fg.position.x = 0.55 + Math.sin(elapsed * 1.8) * 0.12
+    fg.position.z = 1.3
+    const bobBase = 1.4
+    if (phase === 'finished') {
+      fg.position.y = bobBase + Math.abs(Math.sin(elapsed * 6)) * 0.25
+    } else {
+      fg.position.y = bobBase + Math.sin(elapsed * 3.5) * 0.12
+    }
+    const flap = Math.sin(elapsed * 12) * 0.6
+    if (p.falconWingL) p.falconWingL.rotation.z = flap
+    if (p.falconWingR) p.falconWingR.rotation.z = -flap
   }
 
   // Bear chaser animation

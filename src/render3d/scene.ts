@@ -19,6 +19,7 @@ import {
 import { ANTIALIAS, DPR_CAP, FOG_NEAR, FOG_FAR, QUALITY_TIER } from './quality'
 import { buildChinaWallEnvironment } from './environments/china-wall'
 import { buildSlovakParadiseEnvironment, SlovakWaterHandle } from './environments/slovak-paradise'
+import { buildBurjKhalifaEnvironment } from './environments/burj-khalifa'
 
 export interface Stage {
   scene: THREE.Scene
@@ -77,6 +78,24 @@ const ENV_CONFIGS: Record<string, EnvConfig> = {
     fogNear: 55,
     fogFar: 130,
     build: buildSlovakParadiseEnvironment,
+  },
+  'burj-khalifa': {
+    // Bright Dubai sky high above the clouds. Keep the fill light cool/white so
+    // the cloud road reads as fluffy white — the golden sun disc (built in the
+    // environment) supplies the warm accent without tinting the clouds tan.
+    skyColor: 0x8fc4e8,
+    ambientColor: 0xf4f8ff,
+    ambientIntensity: 0.85,
+    sunColor: 0xfff6ec,
+    sunIntensity: 1.45,
+    sunPosition: [-8, 13, 4],
+    hemiSky: 0xcfe7f7,
+    hemiGround: 0xf4f8ff,
+    hemiIntensity: 0.65,
+    // Push fog far out so the cloud sea, rainbows and landmarks all read.
+    fogNear: 50,
+    fogFar: 140,
+    build: buildBurjKhalifaEnvironment,
   },
 }
 

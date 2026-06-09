@@ -58,7 +58,7 @@ const BASE = process.env.URL ?? `http://localhost:${PORT}/`
 function targetUrl() {
   const q = new URLSearchParams()
   if (TARGET === 'home') return BASE
-  q.set('env', TARGET === 'china' ? 'china' : 'slovak')
+  q.set('env', TARGET === 'china' ? 'china' : TARGET === 'dubai' ? 'dubai' : 'slovak')
   q.set('char', CHAR)
   if (TARGET === 'climb') q.set('climb', '1')
   else if (DIST) q.set('d', DIST)

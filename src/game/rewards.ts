@@ -65,4 +65,34 @@ export const REWARDS: Reward[] = [
     scoreThreshold: 1050,
     equippable: false,
   },
+  // ── Dubaj — Burj Khalifa ───────────────────────────────────
+  {
+    id: 'falcon-pet',
+    nameKey: 'reward.falcon-pet',
+    hintKey: 'reward.falcon-pet.hint',
+    country: 'dubai',
+    levelId: 'burj-khalifa',
+  },
+  {
+    id: 'rainbow-wings',
+    nameKey: 'reward.rainbow-wings',
+    hintKey: 'reward.rainbow-wings.hint',
+    country: 'dubai',
+    scoreThreshold: 750,
+  },
+  {
+    id: 'rainbow-tail',
+    nameKey: 'reward.rainbow-tail',
+    hintKey: 'reward.rainbow-tail.hint',
+    country: 'dubai',
+    scoreThreshold: 950,
+  },
+  {
+    id: 'playable-unicorn',
+    nameKey: 'reward.playable-unicorn',
+    hintKey: 'reward.playable-unicorn.hint',
+    country: 'dubai',
+    scoreThreshold: 1050,
+    equippable: false,
+  },
 ]

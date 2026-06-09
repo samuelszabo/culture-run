@@ -145,7 +145,13 @@ function devBoot(): void {
   const envShort = q.get('env')
   const level =
     q.get('level') ??
-    (envShort === 'slovak' ? 'slovak-paradise' : envShort === 'china' ? 'china-wall' : null)
+    (envShort === 'slovak'
+      ? 'slovak-paradise'
+      : envShort === 'china'
+        ? 'china-wall'
+        : envShort === 'dubai'
+          ? 'burj-khalifa'
+          : null)
   const char = q.get('char')
   const d = q.get('d')
   const climb = q.has('climb')

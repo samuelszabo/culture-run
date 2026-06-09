@@ -338,6 +338,118 @@ function makeClimbGate(width: number, geos: THREE.BufferGeometry[], mats: THREE.
   return group
 }
 
+// A hole in the cloud road the player must jump. A dark sky/void quad sits flush
+// with the surface (with a hint of a distant lower cloud far below), ringed by
+// bright white cloud-lip puffs on the near and far edges so it reads instantly
+// as "gap — jump here". Built around the local origin; width spans the road.
+function makeCloudGap(width: number, geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const depth = toWorldSize(30)
+
+  // Void floor — slightly darker than the warm sky so it reads as a drop.
+  const voidGeo = new THREE.PlaneGeometry(width, depth)
+  const voidMat = new THREE.MeshBasicMaterial({ color: 0x4a78a8 })
+  geos.push(voidGeo)
+  mats.push(voidMat)
+  const voidPlane = new THREE.Mesh(voidGeo, voidMat)
+  voidPlane.rotation.x = -Math.PI / 2
+  voidPlane.position.y = 0.01
+  group.add(voidPlane)
+
+  // A faint lower cloud far below, glimpsed through the hole.
+  const farGeo = new THREE.PlaneGeometry(width * 0.7, depth * 0.6)
+  const farMat = new THREE.MeshBasicMaterial({ color: 0xbcd2e6, transparent: true, opacity: 0.6 })
+  geos.push(farGeo)
+  mats.push(farMat)
+  const far = new THREE.Mesh(farGeo, farMat)
+  far.rotation.x = -Math.PI / 2
+  far.position.y = -1.4
+  group.add(far)
+
+  // Bright cloud-lip puffs lining the near and far rims of the hole.
+  const lipGeo = new THREE.SphereGeometry(0.32, 7, 5)
+  const lipMat = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true })
+  geos.push(lipGeo)
+  mats.push(lipMat)
+  const puffsPerRim = Math.max(3, Math.round(width / 0.7))
+  for (const rimZ of [-depth / 2, depth / 2]) {
+    for (let i = 0; i < puffsPerRim; i++) {
+      const t = puffsPerRim === 1 ? 0.5 : i / (puffsPerRim - 1)
+      const px = -width / 2 + t * width
+      const puff = new THREE.Mesh(lipGeo, lipMat)
+      puff.position.set(px, 0.06, rimZ)
+      puff.scale.set(1, 0.55, 0.8)
+      group.add(puff)
+    }
+  }
+
+  return group
+}
+
+// A glassy skyscraper top poking up through the clouds — a tall tapered tower
+// with rows of little window dots and a slender spire. Lateral-dodge obstacle.
+function makeTowerTop(width: number, geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const height = OBSTACLE_WORLD_HEIGHTS['tower-top']
+  const baseW = Math.min(width, toWorldSize(150))
+  const topW = baseW * 0.55
+  const depthB = baseW * 0.9
+  const depthT = topW * 0.9
+
+  // Tapered glass body — a cylinder with 4 sides reads as a faceted tower.
+  const bodyGeo = new THREE.CylinderGeometry(topW * 0.5, baseW * 0.5, height, 4)
+  const bodyMat = new THREE.MeshLambertMaterial({ color: 0x4f8fb5, flatShading: true })
+  geos.push(bodyGeo)
+  mats.push(bodyMat)
+  const body = new THREE.Mesh(bodyGeo, bodyMat)
+  body.rotation.y = Math.PI / 4
+  body.position.y = height / 2
+  group.add(body)
+
+  // Window dots — bright little squares in rows up the front faces.
+  const winMat = new THREE.MeshBasicMaterial({ color: 0xd8f0ff })
+  mats.push(winMat)
+  const winGeo = new THREE.BoxGeometry(0.06, 0.06, 0.02)
+  geos.push(winGeo)
+  const rows = 7
+  const cols = 3
+  for (let r = 0; r < rows; r++) {
+    const fy = (r + 0.5) / rows
+    const wWidth = baseW + (topW - baseW) * fy
+    const y = fy * height
+    for (let c = 0; c < cols; c++) {
+      const fx = c / (cols - 1) - 0.5
+      const x = fx * wWidth * 0.6
+      const zEdge = (wWidth * 0.45) * (depthB / baseW)
+      const front = new THREE.Mesh(winGeo, winMat)
+      front.position.set(x, y, zEdge)
+      group.add(front)
+      const back = new THREE.Mesh(winGeo, winMat)
+      back.position.set(x, y, -zEdge)
+      group.add(back)
+    }
+  }
+
+  // Roof slab + spire.
+  const roofGeo = new THREE.BoxGeometry(topW * 0.8, 0.12, depthT * 0.8)
+  const roofMat = new THREE.MeshLambertMaterial({ color: 0x3a7090 })
+  geos.push(roofGeo)
+  mats.push(roofMat)
+  const roof = new THREE.Mesh(roofGeo, roofMat)
+  roof.position.y = height + 0.06
+  group.add(roof)
+
+  const spireGeo = new THREE.CylinderGeometry(0.015, 0.05, height * 0.28, 5)
+  const spireMat = new THREE.MeshLambertMaterial({ color: 0xc9d6dd })
+  geos.push(spireGeo)
+  mats.push(spireMat)
+  const spire = new THREE.Mesh(spireGeo, spireMat)
+  spire.position.y = height + height * 0.14
+  group.add(spire)
+
+  return group
+}
+
 function makeNoodles(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
   const group = new THREE.Group()
   const s = COLLECTIBLE_WORLD_SIZE
@@ -516,6 +628,131 @@ function makeCucoriedky(geos: THREE.BufferGeometry[], mats: THREE.Material[]): T
   return group
 }
 
+// Dubai pistachio-kunafa chocolate bar — a brown segmented slab with a
+// pistachio-green filling layer peeking out and a drizzle on top.
+function makeDubaiChoc(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const s = COLLECTIBLE_WORLD_SIZE
+
+  const barGeo = new THREE.BoxGeometry(s * 0.85, s * 0.28, s * 0.5)
+  const barMat = new THREE.MeshLambertMaterial({ color: 0x5a3a22 })
+  geos.push(barGeo)
+  mats.push(barMat)
+  const bar = new THREE.Mesh(barGeo, barMat)
+  group.add(bar)
+
+  // Pistachio-green filling shown as a cross-section band through the middle.
+  const fillGeo = new THREE.BoxGeometry(s * 0.86, s * 0.1, s * 0.52)
+  const fillMat = new THREE.MeshLambertMaterial({ color: 0x86b34a })
+  geos.push(fillGeo)
+  mats.push(fillMat)
+  const fill = new THREE.Mesh(fillGeo, fillMat)
+  fill.position.y = -s * 0.02
+  group.add(fill)
+
+  // Segment grooves on top.
+  const grooveMat = new THREE.MeshLambertMaterial({ color: 0x3f2817 })
+  mats.push(grooveMat)
+  const grooveGeo = new THREE.BoxGeometry(s * 0.04, s * 0.06, s * 0.5)
+  geos.push(grooveGeo)
+  for (let i = 0; i < 3; i++) {
+    const g = new THREE.Mesh(grooveGeo, grooveMat)
+    g.position.set(-s * 0.28 + i * s * 0.28, s * 0.15, 0)
+    group.add(g)
+  }
+
+  // Pistachio drizzle dots on top.
+  const drizMat = new THREE.MeshLambertMaterial({ color: 0xa8d860 })
+  mats.push(drizMat)
+  const drizGeo = new THREE.SphereGeometry(s * 0.05, 5, 4)
+  geos.push(drizGeo)
+  for (let i = 0; i < 4; i++) {
+    const d = new THREE.Mesh(drizGeo, drizMat)
+    d.position.set(-s * 0.3 + i * s * 0.2, s * 0.18, (i % 2 === 0 ? 1 : -1) * s * 0.12)
+    group.add(d)
+  }
+
+  return group
+}
+
+// Datle — a cluster of 2-3 glossy brown oblong dates on a small dish.
+function makeDatle(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const s = COLLECTIBLE_WORLD_SIZE
+
+  const dishGeo = new THREE.CylinderGeometry(s * 0.46, s * 0.36, s * 0.12, 14)
+  const dishMat = new THREE.MeshLambertMaterial({ color: 0xe8ddc8 })
+  geos.push(dishGeo)
+  mats.push(dishMat)
+  const dish = new THREE.Mesh(dishGeo, dishMat)
+  dish.position.y = -s * 0.18
+  group.add(dish)
+
+  const dateMat = new THREE.MeshLambertMaterial({ color: 0x5b3318 })
+  mats.push(dateMat)
+  const dateGeo = new THREE.SphereGeometry(s * 0.16, 8, 6)
+  geos.push(dateGeo)
+  const datePts: Array<[number, number, number]> = [
+    [-s * 0.16, 0, s * 0.06],
+    [s * 0.17, 0, -s * 0.04],
+    [0, s * 0.04, s * 0.18],
+  ]
+  for (const [px, py, pz] of datePts) {
+    const d = new THREE.Mesh(dateGeo, dateMat)
+    d.position.set(px, -s * 0.05 + py, pz)
+    d.scale.set(0.7, 0.62, 1.5)
+    d.rotation.y = px * 2
+    group.add(d)
+  }
+
+  return group
+}
+
+// Luqaimat — a few golden-brown glossy dough balls drizzled with syrup, on a
+// tiny plate.
+function makeLuqaimat(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const s = COLLECTIBLE_WORLD_SIZE
+
+  const plateGeo = new THREE.CylinderGeometry(s * 0.46, s * 0.4, s * 0.1, 14)
+  const plateMat = new THREE.MeshLambertMaterial({ color: 0xf2ece0 })
+  geos.push(plateGeo)
+  mats.push(plateMat)
+  const plate = new THREE.Mesh(plateGeo, plateMat)
+  plate.position.y = -s * 0.2
+  group.add(plate)
+
+  const ballMat = new THREE.MeshLambertMaterial({ color: 0xc77f2a })
+  mats.push(ballMat)
+  const ballGeo = new THREE.SphereGeometry(s * 0.15, 8, 6)
+  geos.push(ballGeo)
+  const ballPts: Array<[number, number, number]> = [
+    [-s * 0.16, 0, -s * 0.1],
+    [s * 0.16, 0, -s * 0.08],
+    [0, 0, s * 0.16],
+    [0, s * 0.18, 0],
+  ]
+  for (const [px, py, pz] of ballPts) {
+    const b = new THREE.Mesh(ballGeo, ballMat)
+    b.position.set(px, -s * 0.04 + py, pz)
+    group.add(b)
+  }
+
+  // Honey-syrup drizzle highlight.
+  const syrupMat = new THREE.MeshLambertMaterial({ color: 0xe8a83c })
+  mats.push(syrupMat)
+  const syrupGeo = new THREE.SphereGeometry(s * 0.04, 5, 4)
+  geos.push(syrupGeo)
+  for (let i = 0; i < 5; i++) {
+    const d = new THREE.Mesh(syrupGeo, syrupMat)
+    const a = (i / 5) * Math.PI * 2
+    d.position.set(Math.cos(a) * s * 0.14, s * 0.12, Math.sin(a) * s * 0.14)
+    group.add(d)
+  }
+
+  return group
+}
+
 function buildObstacleEntry(
   obstacle: Obstacle,
   scene: THREE.Scene,
@@ -546,6 +783,10 @@ function buildObstacleEntry(
     group = makeGorgeWall(width, geos, mats)
   } else if (kind === 'ladder') {
     group = obstacle.climb ? makeClimbGate(width, geos, mats) : makeLadder(width, geos, mats)
+  } else if (kind === 'cloud-gap') {
+    group = makeCloudGap(width, geos, mats)
+  } else if (kind === 'tower-top') {
+    group = makeTowerTop(width, geos, mats)
   } else {
     group = makeCarrier(geos, mats)
   }
@@ -659,6 +900,12 @@ function buildCollectibleEntry(
     group = makePstruh(geos, mats)
   } else if (collectible.kind === 'cucoriedky') {
     group = makeCucoriedky(geos, mats)
+  } else if (collectible.kind === 'dubai-choc') {
+    group = makeDubaiChoc(geos, mats)
+  } else if (collectible.kind === 'datle') {
+    group = makeDatle(geos, mats)
+  } else if (collectible.kind === 'luqaimat') {
+    group = makeLuqaimat(geos, mats)
   } else {
     group = makeTea(geos, mats)
   }

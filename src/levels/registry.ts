@@ -2,6 +2,7 @@ import { Character } from '../game/types'
 import { Level, createChinaWallLevel } from './china-wall'
 import { Landmark } from './landmark'
 import { SLOVAK_PARADISE_LANDMARKS, createSlovakParadiseLevel } from './slovak-paradise'
+import { BURJ_KHALIFA_LANDMARKS, createBurjKhalifaLevel } from './burj-khalifa'
 
 // China landmarks live here (registry) rather than in the render layer so the
 // game loop can trigger captions without importing render3d.
@@ -57,6 +58,20 @@ export const LEVELS: Record<string, LevelDef> = {
     cardFactKey: 'card.slovak-paradise.fact',
     resultsFactKey: 'results.fact.slovak-paradise',
   },
+  'burj-khalifa': {
+    id: 'burj-khalifa',
+    countryKey: 'dubai',
+    flag: '🇦🇪',
+    environmentId: 'burj-khalifa',
+    chaser: false,
+    createLevel: createBurjKhalifaLevel,
+    landmarks: BURJ_KHALIFA_LANDMARKS,
+    areaNameKey: 'area.burj-khalifa',
+    areaInfoKey: 'area.burj-khalifa.info',
+    cardTitleKey: 'card.burj-khalifa.title',
+    cardFactKey: 'card.burj-khalifa.fact',
+    resultsFactKey: 'results.fact.burj-khalifa',
+  },
 }
 
 export function getLevel(id: string): LevelDef {
@@ -67,6 +82,7 @@ export function getLevel(id: string): LevelDef {
 export const COUNTRY_LEVEL: Record<string, string> = {
   china: 'china-wall',
   slovakia: 'slovak-paradise',
+  dubai: 'burj-khalifa',
 }
 
 // Characters offered in each country's wardrobe. The bear is the Slovak-themed
@@ -75,4 +91,5 @@ export const COUNTRY_LEVEL: Record<string, string> = {
 export const COUNTRY_CHARACTERS: Record<string, Character[]> = {
   china: ['boy', 'girl', 'cat'],
   slovakia: ['boy', 'girl', 'cat', 'bear'],
+  dubai: ['boy', 'girl', 'cat', 'unicorn'],
 }

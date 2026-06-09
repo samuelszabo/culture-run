@@ -17,7 +17,7 @@ export const JUMP_GRAVITY = 1800
 // Airborne above this height clears a jumpable obstacle.
 export const JUMP_CLEAR_HEIGHT = 26
 
-export type Character = 'boy' | 'girl' | 'cat' | 'bear'
+export type Character = 'boy' | 'girl' | 'cat' | 'bear' | 'unicorn'
 
 export type RewardId =
   | 'dragon-tail'
@@ -27,6 +27,10 @@ export type RewardId =
   | 'kroj'
   | 'squirrel'
   | 'playable-bear'
+  | 'falcon-pet'
+  | 'rainbow-wings'
+  | 'rainbow-tail'
+  | 'playable-unicorn'
 
 export interface SaveData {
   version: number
@@ -64,12 +68,18 @@ export type ObstacleKind =
   | 'firecracker'
   | 'gorge-wall'
   | 'ladder'
+  // Dubaj (beh v oblakoch): medzera v oblakovej ceste — smrteľná iba na zemi,
+  // preskoč ju skokom. Špička mrakodrapu — vysoká prekážka na uhýbanie.
+  | 'cloud-gap'
+  | 'tower-top'
 
 // Low, ground-level obstacles the player can leap over. Tall barriers
 // (stalls/walls/gorge rock faces) and pedestrians (walkers/carriers) must
-// still be dodged. Ladders are decorative gap markers (harmless).
+// still be dodged. Ladders are decorative gap markers (harmless). A cloud-gap
+// behaves like a jumpable hazard inverted: harmless while airborne, deadly on
+// the ground — you must be in a jump as it passes underfoot.
 export function isJumpable(kind: ObstacleKind): boolean {
-  return kind === 'firecracker'
+  return kind === 'firecracker' || kind === 'cloud-gap'
 }
 
 export interface Obstacle {
@@ -95,6 +105,9 @@ export type CollectibleKind =
   | 'halusky'
   | 'pstruh'
   | 'cucoriedky'
+  | 'dubai-choc'
+  | 'datle'
+  | 'luqaimat'
 
 export interface Collectible {
   kind: CollectibleKind

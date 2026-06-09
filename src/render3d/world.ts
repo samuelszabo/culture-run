@@ -38,6 +38,11 @@ export const OBSTACLE_WORLD_HEIGHTS: Record<ObstacleKind, number> = {
   'gorge-wall': 1.7,
   // Decorative ladder set into a gorge gap (harmless marker).
   ladder: 1.6,
+  // Dubai: a flat hole punched through the cloud road — jump it. Low so it
+  // reads as a gap in the surface rather than a wall.
+  'cloud-gap': 0.3,
+  // Dubai: a skyscraper top poking up through the clouds — tall lateral dodge.
+  'tower-top': 2.8,
 }
 
 export const CAMERA_HEIGHT = 3.4
@@ -67,6 +72,13 @@ export function slovakPathHeight(trackY: number): number {
     0.35 * (0.5 + 0.5 * Math.sin(trackY * 0.0016)) +
     0.15 * (0.5 + 0.5 * Math.sin(trackY * 0.0037 + 1.3))
   )
+}
+
+// Gentle airy bob (world units, range ~0..0.3) for the Dubai cloud road. Purely
+// cosmetic — exported so entities.ts may give floating items a soft drift. The
+// obstacle collision plane stays at y=0; this is never wired into camera/player.
+export function cloudHeight(trackY: number): number {
+  return 0.15 * (0.5 + 0.5 * Math.sin(trackY * 0.0021 + 0.7))
 }
 
 export function playerWorldPosition(playerX: number, distance: number): { x: number; z: number } {

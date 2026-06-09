@@ -26,6 +26,10 @@ const REWARD_ICONS: Record<RewardId, string> = {
   'kroj': '👗',
   'squirrel': '🐿️',
   'playable-bear': '🐻',
+  'falcon-pet': '🦅',
+  'rainbow-wings': '🌈',
+  'rainbow-tail': '🦄',
+  'playable-unicorn': '🦄',
 }
 
 // Characters that always exist vs. those gated behind a reward unlock.
@@ -33,6 +37,7 @@ const BASE_CHARACTERS: Character[] = ['boy', 'girl', 'cat']
 
 function isCharacterUnlocked(ch: Character): boolean {
   if (ch === 'bear') return save.unlockedRewards.includes('playable-bear')
+  if (ch === 'unicorn') return save.unlockedRewards.includes('playable-unicorn')
   return true
 }
 
@@ -113,6 +118,14 @@ function createCharacterFigure(character: Character): HTMLDivElement {
     figure.appendChild(div('bear-snout'))
   }
 
+  if (character === 'unicorn') {
+    figure.appendChild(div('unicorn-horn'))
+    figure.appendChild(div('unicorn-mane'))
+    figure.appendChild(div('cat-ear cat-ear--left'))
+    figure.appendChild(div('cat-ear cat-ear--right'))
+    figure.appendChild(div('unicorn-tail'))
+  }
+
   return figure
 }
 
@@ -164,6 +177,7 @@ function renderCountry(): void {
   const countries: Array<{ key: string; flag: string; unlocked: boolean }> = [
     { key: 'china', flag: '🇨🇳', unlocked: true },
     { key: 'slovakia', flag: '🇸🇰', unlocked: true },
+    { key: 'dubai', flag: '🇦🇪', unlocked: true },
     { key: 'japan', flag: '🇯🇵', unlocked: false },
     { key: 'italy', flag: '🇮🇹', unlocked: false },
     { key: 'egypt', flag: '🇪🇬', unlocked: false },

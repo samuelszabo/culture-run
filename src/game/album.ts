@@ -92,4 +92,47 @@ export const ALBUM_ENTRIES: AlbumEntry[] = [
     factKey: 'landmark.viewpoint.fact',
     icon: '⛰️',
   },
+  // ── Dubaj — Burj Khalifa ───────────────────────────────────
+  {
+    id: 'dubai-choc',
+    category: 'food',
+    nameKey: 'food.dubai-choc.name',
+    factKey: 'album.dubai-choc.fact',
+    icon: '🍫',
+  },
+  {
+    id: 'datle',
+    category: 'food',
+    nameKey: 'food.datle.name',
+    factKey: 'album.datle.fact',
+    icon: '🌴',
+  },
+  {
+    id: 'luqaimat',
+    category: 'food',
+    nameKey: 'food.luqaimat.name',
+    factKey: 'album.luqaimat.fact',
+    icon: '🍯',
+  },
+  {
+    id: 'burj-khalifa',
+    category: 'landmark',
+    nameKey: 'landmark.burj-khalifa',
+    factKey: 'landmark.burj-khalifa.fact',
+    icon: '🏙️',
+  },
+  {
+    id: 'burj-al-arab',
+    category: 'landmark',
+    nameKey: 'landmark.burj-al-arab',
+    factKey: 'landmark.burj-al-arab.fact',
+    icon: '⛵',
+  },
+  {
+    id: 'dubai-frame',
+    category: 'landmark',
+    nameKey: 'landmark.dubai-frame',
+    factKey: 'landmark.dubai-frame.fact',
+    icon: '🖼️',
+  },
 ]
