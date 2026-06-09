@@ -160,7 +160,10 @@ function devBoot(): void {
     triggeredClimbs.add(climbGates[0].trackY)
     enterClimb(state, climbGates[0])
   } else if (d !== null) {
-    state.distance = Math.max(0, Math.min(TRACK_LENGTH - 1, Number(d) || 0))
+    const dist = Math.max(0, Math.min(TRACK_LENGTH - 1, Number(d) || 0))
+    // Don't re-trigger climb gates we've "skipped past" when jumping ahead.
+    for (const g of climbGates) if (g.trackY <= dist) triggeredClimbs.add(g.trackY)
+    state.distance = dist
   }
 }
 
