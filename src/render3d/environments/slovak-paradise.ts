@@ -10,7 +10,6 @@ import { TREE_DENSITY, QUALITY_TIER } from '../quality'
 import { getLevel } from '../../levels/registry'
 
 // ─── Palette ────────────────────────────────────────────────────────────────
-const PATH_COLOR        = 0x9a8a6a   // earthy stone/dirt trail
 const TERRAIN_DIRT      = 0x5a8a38   // verge — bright grassy green
 const TERRAIN_GRASS_LO  = 0x4a8228   // lower hillside grass — saturated green
 const TERRAIN_GRASS_HI  = 0x5a9a38   // brighter mid-grass
@@ -115,58 +114,57 @@ function buildPath(parent: THREE.Object3D): void {
   const isHigh = QUALITY_TIER !== 'low'
   const w = ROAD_WORLD_WIDTH + 0.4
 
-  // Bumpy earthy trail — a segmented surface displaced with low noise and
-  // flat-shaded so the path reads as a rugged, uneven mountain track.
-  const segX = isHigh ? 10 : 6
-  const segZ = isHigh ? 260 : 130
-  const geo = new THREE.PlaneGeometry(w, TRACK_LENGTH_WORLD, segX, segZ)
-  geo.rotateX(-Math.PI / 2)
-  const pos = geo.attributes.position as THREE.BufferAttribute
-  const col = new Float32Array(pos.count * 3)
-  const base = hexToRGB01(PATH_COLOR)
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i)
-    const z = pos.getZ(i)
-    const n = fbm2D(x * 0.9 + 10, z * 0.25, 1337, 3)
-    const edge = Math.min(1, Math.abs(x) / (w / 2))
-    // ±~0.06 bumps, a touch higher/rutted toward the edges
-    pos.setY(i, (n - 0.5) * 0.12 + edge * edge * 0.05)
-    const b = 0.82 + (n - 0.5) * 0.5 // mottled brightness
-    col[i * 3] = base[0] * b
-    col[i * 3 + 1] = base[1] * b
-    col[i * 3 + 2] = base[2] * b
-  }
-  geo.computeVertexNormals()
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3))
-  const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }))
-  mesh.position.set(0, 0, TRACK_Z_CENTER)
-  parent.add(mesh)
-
-  // Thin solid base so the trail edges aren't see-through under the bumps.
-  const baseGeo = new THREE.BoxGeometry(w, 0.2, TRACK_LENGTH_WORLD)
-  const baseMesh = new THREE.Mesh(baseGeo, new THREE.MeshLambertMaterial({ color: PATH_COLOR }))
-  baseMesh.position.set(0, -0.13, TRACK_Z_CENTER)
+  // Dark earth base so the cracks between stones aren't see-through.
+  const baseMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(w, 0.3, TRACK_LENGTH_WORLD),
+    new THREE.MeshLambertMaterial({ color: 0x4f4334 }),
+  )
+  baseMesh.position.set(0, -0.18, TRACK_Z_CENTER)
   parent.add(baseMesh)
 
-  // Small embedded pebbles scattered on the trail for texture (instanced, gated).
-  if (isHigh) {
-    const pebGeo = new THREE.IcosahedronGeometry(0.09, 0)
-    const pebMat = new THREE.MeshLambertMaterial({ color: 0x8d8377, flatShading: true })
-    const count = 220
-    const im = new THREE.InstancedMesh(pebGeo, pebMat, count)
-    const d = new THREE.Object3D()
-    const rng = makeLCG(909)
-    for (let i = 0; i < count; i++) {
-      d.position.set((rng() - 0.5) * w * 0.92, 0.03, TRACK_Z_START - rng() * TRACK_LENGTH_WORLD)
-      const s = 0.5 + rng() * 0.9
-      d.scale.set(s, s * 0.5, s)
-      d.rotation.y = rng() * 6.283
-      d.updateMatrix()
-      im.setMatrixAt(i, d.matrix)
+  // Big flat-topped stepping stones you walk across — the rugged Slovenský raj
+  // gorge floor. Low faceted cylinders packed in a jittered, offset grid with
+  // their tops near y≈0 so the runner strides over real rocks.
+  const halfW = ROAD_WORLD_WIDTH / 2
+  const cols = 4
+  const stepZ = isHigh ? 1.0 : 1.55
+  const rows = Math.floor(TRACK_LENGTH_WORLD / stepZ)
+  const count = rows * cols
+
+  const stoneGeo = new THREE.CylinderGeometry(0.72, 0.62, 1, 7, 1)
+  const stoneMat = new THREE.MeshLambertMaterial({ flatShading: true })
+  const im = new THREE.InstancedMesh(stoneGeo, stoneMat, count)
+
+  const stoneCols = [0x8d857a, 0x79705f, 0x9a9184, 0x6f685a, 0x847b6d]
+  const mossCol = 0x5d7a42
+  const dummy = new THREE.Object3D()
+  const color = new THREE.Color()
+  const rng = makeLCG(4242)
+
+  let i = 0
+  for (let r = 0; r < rows; r++) {
+    const zc = TRACK_Z_START - r * stepZ - stepZ / 2
+    const rowOffset = (r % 2) * (w / cols) * 0.5 // brick-like staggering
+    for (let c = 0; c < cols; c++) {
+      const baseX = -w / 2 + (w / cols) * (c + 0.5) + rowOffset
+      const x = Math.max(-halfW, Math.min(halfW, baseX + (rng() - 0.5) * 0.5))
+      const rx = 1.05 + rng() * 0.6 // big stones, overlapping neighbours
+      const rz = 1.05 + rng() * 0.6
+      const sy = 0.32 + rng() * 0.28
+      const topY = (rng() - 0.5) * 0.08 // slight unevenness, still walkable
+      dummy.position.set(x, topY - sy * 0.5, zc + (rng() - 0.5) * 0.4)
+      dummy.scale.set(rx, sy, rz)
+      dummy.rotation.set(0, rng() * 6.283, 0)
+      dummy.updateMatrix()
+      im.setMatrixAt(i, dummy.matrix)
+      const hex = rng() < 0.12 ? mossCol : stoneCols[(rng() * stoneCols.length) | 0]
+      im.setColorAt(i, color.setHex(hex))
+      i++
     }
-    im.instanceMatrix.needsUpdate = true
-    parent.add(im)
   }
+  im.instanceMatrix.needsUpdate = true
+  if (im.instanceColor) im.instanceColor.needsUpdate = true
+  parent.add(im)
 
   // Green verge strips right alongside the path railing — clearly visible in foreground
   const vergeW = CLIFF_X_BASE - RAILING_X - 0.1
