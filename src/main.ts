@@ -8,6 +8,7 @@ import { updatePlayer } from './game/player'
 import { applyDeathPenalty, computeStars } from './game/scoring'
 import {
   BASE_SPEED,
+  Character,
   GameState,
   Obstacle,
   ROAD_LEFT,
@@ -135,6 +136,35 @@ initScreens(save, () => persistSave(save), {
 attachKeyboard(input)
 attachTouch(canvas, input, screenToGameX, () => (state ? state.phase === 'climbing' : false))
 showHome()
+
+// Dev-only deep links for fast visual debugging — stripped from production
+// builds via the import.meta.env.DEV guard below.
+//   ?env=slovak|china (or ?level=<id>), ?char=bear, ?d=<distance>, ?climb
+function devBoot(): void {
+  const q = new URLSearchParams(location.search)
+  const envShort = q.get('env')
+  const level =
+    q.get('level') ??
+    (envShort === 'slovak' ? 'slovak-paradise' : envShort === 'china' ? 'china-wall' : null)
+  const char = q.get('char')
+  const d = q.get('d')
+  const climb = q.has('climb')
+  if (!level && !char && d === null && !climb) return
+
+  if (char) save.character = char as Character
+  currentLevelId = level ?? (climb ? 'slovak-paradise' : currentLevelId)
+  startGame()
+  if (!state) return
+
+  if (climb && climbGates.length > 0) {
+    triggeredClimbs.add(climbGates[0].trackY)
+    enterClimb(state, climbGates[0])
+  } else if (d !== null) {
+    state.distance = Math.max(0, Math.min(TRACK_LENGTH - 1, Number(d) || 0))
+  }
+}
+
+if (import.meta.env.DEV) devBoot()
 
 function gameEnded(): boolean {
   return state !== null && (state.phase === 'finished' || state.phase === 'gameover')
