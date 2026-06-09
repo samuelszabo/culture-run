@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { CLIMB_HEIGHT, CLIMB_LANES, CLIMB_ROCK_POOL, GameState } from '../game/types'
+import { CLIMB_HEIGHT, CLIMB_LANES, GameState } from '../game/types'
 import {
   CLIMB_LANE_WORLD_DX,
   CLIMB_PLAYER_WORLD_Y,
@@ -11,7 +11,6 @@ import {
 export interface ClimbView {
   root: THREE.Group
   ladder: THREE.Group
-  rocks: THREE.Mesh[]
   scene: THREE.Scene
   geos: THREE.BufferGeometry[]
   mats: THREE.Material[]
@@ -40,10 +39,6 @@ const LADDER_TOP = HEIGHT_WORLD
 const LANE_HALF = ((CLIMB_LANES - 1) / 2) * CLIMB_LANE_WORLD_DX
 const RAIL_X = LANE_HALF + 0.4
 const WALL_HALF_W = RAIL_X + 1.1
-
-function laneWorldDX(lane: number): number {
-  return (lane - (CLIMB_LANES - 1) / 2) * CLIMB_LANE_WORLD_DX
-}
 
 function lcg(seed: number): () => number {
   let s = seed
@@ -205,21 +200,8 @@ export function createClimbView(scene: THREE.Scene): ClimbView {
   }
   root.add(ladder)
 
-  // Falling rock pool (in front of the ladder).
-  const rockGeo = new THREE.IcosahedronGeometry(0.28, 0)
-  const rockMat = new THREE.MeshLambertMaterial({ color: 0x6b6258, flatShading: true })
-  geos.push(rockGeo)
-  mats.push(rockMat)
-  const rocks: THREE.Mesh[] = []
-  for (let i = 0; i < CLIMB_ROCK_POOL; i++) {
-    const rock = new THREE.Mesh(rockGeo, rockMat)
-    rock.visible = false
-    root.add(rock)
-    rocks.push(rock)
-  }
-
   scene.add(root)
-  return { root, ladder, rocks, scene, geos, mats }
+  return { root, ladder, scene, geos, mats }
 }
 
 export function updateClimbView(view: ClimbView, state: GameState): void {
@@ -238,23 +220,6 @@ export function updateClimbView(view: ClimbView, state: GameState): void {
 
   // Slide the whole ladder + rock face down as the player climbs.
   view.ladder.position.set(gx, CLIMB_PLAYER_WORLD_Y - scrollY, gz)
-
-  for (let i = 0; i < view.rocks.length; i++) {
-    const mesh = view.rocks[i]
-    const r = c.rocks[i]
-    if (!r || !r.active) {
-      mesh.visible = false
-      continue
-    }
-    mesh.visible = true
-    mesh.position.set(
-      gx + laneWorldDX(r.lane),
-      CLIMB_PLAYER_WORLD_Y + (r.y - c.progress) * CLIMB_WORLD_PER_PX,
-      gz + 0.22,
-    )
-    mesh.rotation.x = state.elapsed * 3 + i
-    mesh.rotation.z = state.elapsed * 2 + i
-  }
 }
 
 export function disposeClimbView(view: ClimbView): void {

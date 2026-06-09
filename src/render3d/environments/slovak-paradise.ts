@@ -112,12 +112,61 @@ function lerpColor(
 
 // ─── 1. Path / ground strip + green verge ────────────────────────────────────
 function buildPath(parent: THREE.Object3D): void {
-  // Earthy trail
-  const geo = new THREE.BoxGeometry(ROAD_WORLD_WIDTH + 0.4, 0.18, TRACK_LENGTH_WORLD)
-  const mat = new THREE.MeshLambertMaterial({ color: PATH_COLOR })
-  const mesh = new THREE.Mesh(geo, mat)
-  mesh.position.set(0, -0.09, TRACK_Z_CENTER)
+  const isHigh = QUALITY_TIER !== 'low'
+  const w = ROAD_WORLD_WIDTH + 0.4
+
+  // Bumpy earthy trail — a segmented surface displaced with low noise and
+  // flat-shaded so the path reads as a rugged, uneven mountain track.
+  const segX = isHigh ? 10 : 6
+  const segZ = isHigh ? 260 : 130
+  const geo = new THREE.PlaneGeometry(w, TRACK_LENGTH_WORLD, segX, segZ)
+  geo.rotateX(-Math.PI / 2)
+  const pos = geo.attributes.position as THREE.BufferAttribute
+  const col = new Float32Array(pos.count * 3)
+  const base = hexToRGB01(PATH_COLOR)
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i)
+    const z = pos.getZ(i)
+    const n = fbm2D(x * 0.9 + 10, z * 0.25, 1337, 3)
+    const edge = Math.min(1, Math.abs(x) / (w / 2))
+    // ±~0.06 bumps, a touch higher/rutted toward the edges
+    pos.setY(i, (n - 0.5) * 0.12 + edge * edge * 0.05)
+    const b = 0.82 + (n - 0.5) * 0.5 // mottled brightness
+    col[i * 3] = base[0] * b
+    col[i * 3 + 1] = base[1] * b
+    col[i * 3 + 2] = base[2] * b
+  }
+  geo.computeVertexNormals()
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3))
+  const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }))
+  mesh.position.set(0, 0, TRACK_Z_CENTER)
   parent.add(mesh)
+
+  // Thin solid base so the trail edges aren't see-through under the bumps.
+  const baseGeo = new THREE.BoxGeometry(w, 0.2, TRACK_LENGTH_WORLD)
+  const baseMesh = new THREE.Mesh(baseGeo, new THREE.MeshLambertMaterial({ color: PATH_COLOR }))
+  baseMesh.position.set(0, -0.13, TRACK_Z_CENTER)
+  parent.add(baseMesh)
+
+  // Small embedded pebbles scattered on the trail for texture (instanced, gated).
+  if (isHigh) {
+    const pebGeo = new THREE.IcosahedronGeometry(0.09, 0)
+    const pebMat = new THREE.MeshLambertMaterial({ color: 0x8d8377, flatShading: true })
+    const count = 220
+    const im = new THREE.InstancedMesh(pebGeo, pebMat, count)
+    const d = new THREE.Object3D()
+    const rng = makeLCG(909)
+    for (let i = 0; i < count; i++) {
+      d.position.set((rng() - 0.5) * w * 0.92, 0.03, TRACK_Z_START - rng() * TRACK_LENGTH_WORLD)
+      const s = 0.5 + rng() * 0.9
+      d.scale.set(s, s * 0.5, s)
+      d.rotation.y = rng() * 6.283
+      d.updateMatrix()
+      im.setMatrixAt(i, d.matrix)
+    }
+    im.instanceMatrix.needsUpdate = true
+    parent.add(im)
+  }
 
   // Green verge strips right alongside the path railing — clearly visible in foreground
   const vergeW = CLIFF_X_BASE - RAILING_X - 0.1
