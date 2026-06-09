@@ -28,6 +28,7 @@ import { createStage, renderStage, setEnvironment, updateStage } from './render3
 import { loadSave, persistSave, recordCollectedFood, recordLevelResult, recordLevelResultWithStars, recordSeenLandmark } from './storage/save'
 import { showPreLevelCard } from './ui/cards'
 import { hideHud, initHud, showHud, updateHud } from './ui/hud-dom'
+import { hideActionButton, initActionButton, updateActionButton } from './ui/action-button'
 import { hideLandmarkCaption, showLandmarkCaption } from './ui/landmark-caption'
 import { hideCollectToast, showCollectToast } from './ui/collect-toast'
 import { hideResults, showResults } from './ui/results-dom'
@@ -118,6 +119,7 @@ function goHome(): void {
   hideLandmarkCaption()
   hideCollectToast()
   hideHud()
+  hideActionButton()
   showHome()
 }
 
@@ -134,7 +136,9 @@ initScreens(save, () => persistSave(save), {
   },
 })
 attachKeyboard(input)
-attachTouch(canvas, input, screenToGameX, () => (state ? state.phase === 'climbing' : false))
+const isClimbingNow = () => (state ? state.phase === 'climbing' : false)
+attachTouch(canvas, input, screenToGameX, isClimbingNow)
+initActionButton(input, isClimbingNow)
 showHome()
 
 // Dev-only deep links for fast visual debugging — stripped from production
@@ -311,6 +315,8 @@ function render(): void {
     if (player3d) updatePlayer3D(player3d, state)
     if (climbView) updateClimbView(climbView, state)
     updateHud(state, bestScore())
+    const playing = state.phase === 'running' || state.phase === 'climbing'
+    updateActionButton(playing && !resultsShown, state.phase === 'climbing')
     if (state.lastCollected.seq !== lastToastSeq && state.lastCollected.kind !== '') {
       lastToastSeq = state.lastCollected.seq
       showCollectToast(t('food.' + state.lastCollected.kind + '.name'))

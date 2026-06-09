@@ -81,7 +81,12 @@ async function ensureServer() {
 async function main() {
   await ensureServer()
   const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-gpu'] })
-  const page = await browser.newPage({ viewport: { width: 480, height: 820 } })
+  // TOUCH=1 emulates a touch phone so the mobile-only action button appears.
+  const page = await browser.newPage({
+    viewport: { width: 480, height: 820 },
+    hasTouch: !!process.env.TOUCH,
+    isMobile: !!process.env.TOUCH,
+  })
   const errors = []
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
   page.on('pageerror', (e) => errors.push('PAGEERR: ' + e.message))

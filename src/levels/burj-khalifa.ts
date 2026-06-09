@@ -1,4 +1,5 @@
 import {
+  COLLECTIBLE_SIZE,
   Collectible,
   CollectibleKind,
   Obstacle,
@@ -97,12 +98,24 @@ const PICKUP_POINTS = 15
 // thresholds line up across levels. Asserted in tests/level-dubai.test.ts.
 const PICKUP_TARGET = 72
 
+const HALF = COLLECTIBLE_SIZE / 2
+// Lateral swing of the zig-zag weave (px). The food snakes left↔right across the
+// cloud road instead of running straight down the middle, so the player has to
+// drift to scoop it up.
+const WEAVE_AMP = 130
+
 function createCloudCollectibles(towers: Obstacle[]): Collectible[] {
   const collectibles: Collectible[] = []
   const step = 200
   let i = 0
   for (let trackY = 1500; trackY <= 18000 && collectibles.length < PICKUP_TARGET; trackY += step) {
-    const x = safeXAt(trackY, towers)
+    // Gentle sine weave across the road…
+    let x = ROAD_CENTER + WEAVE_AMP * Math.sin(i * 0.8)
+    // …but near a tower-top, snap onto the guaranteed-open lane so the pickup is
+    // never buried inside the skyscraper.
+    const lane = safeXAt(trackY, towers)
+    if (lane !== ROAD_CENTER) x = lane
+    x = Math.max(ROAD_LEFT + HALF, Math.min(ROAD_RIGHT - HALF, x))
     collectibles.push({
       kind: FOOD_KINDS[i % FOOD_KINDS.length],
       x,

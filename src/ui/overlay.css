@@ -549,3 +549,33 @@
   background: #388e3c;
   box-shadow: 0 6px 0 #1a4d1d, 0 8px 16px rgba(0, 0, 0, 0.4);
 }
+
+/* Touch-only action button (jump / climb). Created only on touch devices by
+   action-button.ts; fixed in the bottom-right for thumb reach. */
+.action-button {
+  position: fixed;
+  right: 18px;
+  bottom: 26px;
+  z-index: 60;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 3px solid #000000;
+  background: rgba(255, 210, 63, 0.9);
+  color: #3d1a00;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  font-size: 18px;
+  line-height: 1;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.action-button:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  background: rgba(255, 223, 110, 0.95);
+}
