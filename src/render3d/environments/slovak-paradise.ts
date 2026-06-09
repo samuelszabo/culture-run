@@ -126,12 +126,12 @@ function buildPath(parent: THREE.Object3D): void {
   // gorge floor. Low faceted cylinders packed in a jittered, offset grid with
   // their tops near y≈0 so the runner strides over real rocks.
   const halfW = ROAD_WORLD_WIDTH / 2
-  const cols = 4
-  const stepZ = isHigh ? 1.0 : 1.55
+  const cols = 3
+  const stepZ = isHigh ? 1.5 : 2.1
   const rows = Math.floor(TRACK_LENGTH_WORLD / stepZ)
   const count = rows * cols
 
-  const stoneGeo = new THREE.CylinderGeometry(0.72, 0.62, 1, 7, 1)
+  const stoneGeo = new THREE.CylinderGeometry(1.0, 0.86, 1, 7, 1)
   const stoneMat = new THREE.MeshLambertMaterial({ flatShading: true })
   const im = new THREE.InstancedMesh(stoneGeo, stoneMat, count)
 
@@ -148,11 +148,11 @@ function buildPath(parent: THREE.Object3D): void {
     for (let c = 0; c < cols; c++) {
       const baseX = -w / 2 + (w / cols) * (c + 0.5) + rowOffset
       const x = Math.max(-halfW, Math.min(halfW, baseX + (rng() - 0.5) * 0.5))
-      const rx = 1.05 + rng() * 0.6 // big stones, overlapping neighbours
-      const rz = 1.05 + rng() * 0.6
-      const sy = 0.32 + rng() * 0.28
-      const topY = (rng() - 0.5) * 0.08 // slight unevenness, still walkable
-      dummy.position.set(x, topY - sy * 0.5, zc + (rng() - 0.5) * 0.4)
+      const rx = 1.35 + rng() * 0.8 // large boulders, overlapping neighbours
+      const rz = 1.35 + rng() * 0.8
+      const sy = 0.4 + rng() * 0.32
+      const topY = (rng() - 0.5) * 0.1 // slight unevenness, still walkable
+      dummy.position.set(x, topY - sy * 0.5, zc + (rng() - 0.5) * 0.5)
       dummy.scale.set(rx, sy, rz)
       dummy.rotation.set(0, rng() * 6.283, 0)
       dummy.updateMatrix()
