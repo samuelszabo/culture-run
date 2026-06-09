@@ -8,8 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` — typecheck (`tsc --noEmit`) then `vite build` to `dist/`
 - `npm run typecheck` — typecheck only
 - `npm run preview` — serve the production build
+- `npm test` — run the Vitest unit suite (`tests/**/*.test.ts`); `npm run test:watch` to watch
 
-There is no test runner or linter configured. `tsc --noEmit` (via `typecheck`/`build`) is the only automated check; correctness of gameplay is verified manually in the browser. Despite what `docs/technical-requirements.md` says, Vitest is **not** set up.
+Vitest covers the **pure game logic** (scoring/stars, lives + death cycle, climb-mini-game fairness, level data/balance, AABB) in `tests/` — no DOM/WebGL. Tests live outside `src` so `tsc` ignores them. Rendering and feel are still verified visually (see Docker section's `scripts/shot.mjs`). When changing gameplay tunables, run `npm test` — e.g. the Slovak level's max score is asserted at 1080 because reward thresholds depend on it.
 
 ## Commits
 
