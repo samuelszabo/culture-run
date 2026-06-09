@@ -349,7 +349,9 @@ function makeCloudGap(width: number, geos: THREE.BufferGeometry[], mats: THREE.M
   const depth = toWorldSize(54)
 
   const shaftH = 4
-  const shaftMat = new THREE.MeshBasicMaterial({ color: 0x3f5d7c, side: THREE.DoubleSide })
+  // Dark interior so the hole clearly contrasts against the bright white cloud
+  // road — otherwise the gap blends in and you can't see where to jump.
+  const shaftMat = new THREE.MeshBasicMaterial({ color: 0x1c2b3e, side: THREE.DoubleSide })
   mats.push(shaftMat)
   const sideGeo = new THREE.PlaneGeometry(depth, shaftH)
   geos.push(sideGeo)
@@ -365,11 +367,12 @@ function makeCloudGap(width: number, geos: THREE.BufferGeometry[], mats: THREE.M
   backWall.position.set(0, -shaftH / 2, -depth / 2)
   group.add(backWall)
 
-  // Dubai, far below: hazy desert sand with a road and a few tiny rooftops, seen
-  // through the hole — sells "running high in the clouds, the city way down there".
+  // Dubai, far below: a dim, haze-dulled desert seen through the hole. Kept much
+  // darker than the cloud road so the gap stays obviously a hole (it also reads
+  // as "far away down there", which a brighter sand did not).
   const groundY = -shaftH
   const sandGeo = new THREE.PlaneGeometry(width * 1.4, depth * 1.6)
-  const sandMat = new THREE.MeshBasicMaterial({ color: 0xe0c489 })
+  const sandMat = new THREE.MeshBasicMaterial({ color: 0x6f5c3a })
   geos.push(sandGeo)
   mats.push(sandMat)
   const sand = new THREE.Mesh(sandGeo, sandMat)
@@ -378,7 +381,7 @@ function makeCloudGap(width: number, geos: THREE.BufferGeometry[], mats: THREE.M
   group.add(sand)
 
   const roadGeo = new THREE.PlaneGeometry(width * 1.4, depth * 0.4)
-  const roadMat = new THREE.MeshBasicMaterial({ color: 0x8d7c5c })
+  const roadMat = new THREE.MeshBasicMaterial({ color: 0x4f4630 })
   geos.push(roadGeo)
   mats.push(roadMat)
   const road = new THREE.Mesh(roadGeo, roadMat)
@@ -386,10 +389,11 @@ function makeCloudGap(width: number, geos: THREE.BufferGeometry[], mats: THREE.M
   road.position.set(0, groundY + 0.02, 0)
   group.add(road)
 
-  // Tiny city blocks viewed from high above.
+  // Tiny city blocks viewed from high above — pale glass so they pop out of the
+  // dark desert as the only bright thing down the hole.
   const blockGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5)
   geos.push(blockGeo)
-  const blockMat = new THREE.MeshBasicMaterial({ color: 0x96b4cc })
+  const blockMat = new THREE.MeshBasicMaterial({ color: 0xaec6da })
   mats.push(blockMat)
   const blockSpots = [
     [-width * 0.3, 0.25, -depth * 0.3],
