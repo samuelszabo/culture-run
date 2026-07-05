@@ -17,7 +17,7 @@ export const JUMP_GRAVITY = 1800
 // Airborne above this height clears a jumpable obstacle.
 export const JUMP_CLEAR_HEIGHT = 26
 
-export type Character = 'boy' | 'girl' | 'cat' | 'bear' | 'unicorn'
+export type Character = 'boy' | 'girl' | 'cat' | 'bear' | 'unicorn' | 'ninja'
 
 export type RewardId =
   | 'dragon-tail'
@@ -31,6 +31,9 @@ export type RewardId =
   | 'rainbow-wings'
   | 'rainbow-tail'
   | 'playable-unicorn'
+  | 'neko-pet'
+  | 'kitsune-pet'
+  | 'playable-ninja'
 
 export interface SaveData {
   version: number
@@ -72,6 +75,8 @@ export type ObstacleKind =
   // preskoč ju skokom. Špička mrakodrapu — vysoká prekážka na uhýbanie.
   | 'cloud-gap'
   | 'tower-top'
+  // Tokio (nočné mesto): zaparkované auto — pevná prekážka blokujúca pruh, uhýbaj do strán.
+  | 'car'
 
 // Low, ground-level obstacles the player can leap over. Tall barriers
 // (stalls/walls/gorge rock faces) and pedestrians (walkers/carriers) must
@@ -108,6 +113,9 @@ export type CollectibleKind =
   | 'dubai-choc'
   | 'datle'
   | 'luqaimat'
+  | 'sushi'
+  | 'ramen'
+  | 'mochi'
 
 export interface Collectible {
   kind: CollectibleKind

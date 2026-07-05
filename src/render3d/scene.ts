@@ -20,6 +20,7 @@ import { ANTIALIAS, DPR_CAP, FOG_NEAR, FOG_FAR, QUALITY_TIER } from './quality'
 import { buildChinaWallEnvironment } from './environments/china-wall'
 import { buildSlovakParadiseEnvironment, SlovakWaterHandle } from './environments/slovak-paradise'
 import { buildBurjKhalifaEnvironment } from './environments/burj-khalifa'
+import { buildTokyoNeonEnvironment } from './environments/tokyo-neon'
 
 export interface Stage {
   scene: THREE.Scene
@@ -96,6 +97,23 @@ const ENV_CONFIGS: Record<string, EnvConfig> = {
     fogNear: 50,
     fogFar: 140,
     build: buildBurjKhalifaEnvironment,
+  },
+  'tokyo-neon': {
+    // Night in a neon city: a deep blue-black sky, dim cool ambient so the
+    // emissive neon signs and windows built in the environment carry the scene.
+    skyColor: 0x0a0a1e,
+    ambientColor: 0x3a3d66,
+    ambientIntensity: 0.72,
+    sunColor: 0x9fb4ff,
+    sunIntensity: 0.7,
+    sunPosition: [-6, 12, 4],
+    hemiSky: 0x1a1c3a,
+    hemiGround: 0x141018,
+    hemiIntensity: 0.5,
+    // Tight fog so the night city fades into darkness a bit closer in.
+    fogNear: 30,
+    fogFar: 95,
+    build: buildTokyoNeonEnvironment,
   },
 }
 

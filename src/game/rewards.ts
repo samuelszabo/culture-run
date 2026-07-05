@@ -95,4 +95,27 @@ export const REWARDS: Reward[] = [
     scoreThreshold: 1050,
     equippable: false,
   },
+  // ── Japonsko — Tokio v noci ────────────────────────────────
+  {
+    id: 'neko-pet',
+    nameKey: 'reward.neko-pet',
+    hintKey: 'reward.neko-pet.hint',
+    country: 'japan',
+    levelId: 'tokyo-neon',
+  },
+  {
+    id: 'kitsune-pet',
+    nameKey: 'reward.kitsune-pet',
+    hintKey: 'reward.kitsune-pet.hint',
+    country: 'japan',
+    scoreThreshold: 810,
+  },
+  {
+    id: 'playable-ninja',
+    nameKey: 'reward.playable-ninja',
+    hintKey: 'reward.playable-ninja.hint',
+    country: 'japan',
+    scoreThreshold: 1050,
+    equippable: false,
+  },
 ]

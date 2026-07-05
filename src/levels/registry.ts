@@ -3,6 +3,7 @@ import { Level, createChinaWallLevel } from './china-wall'
 import { Landmark } from './landmark'
 import { SLOVAK_PARADISE_LANDMARKS, createSlovakParadiseLevel } from './slovak-paradise'
 import { BURJ_KHALIFA_LANDMARKS, createBurjKhalifaLevel } from './burj-khalifa'
+import { TOKYO_NEON_LANDMARKS, createTokyoNeonLevel } from './tokyo-neon'
 
 // China landmarks live here (registry) rather than in the render layer so the
 // game loop can trigger captions without importing render3d.
@@ -72,6 +73,20 @@ export const LEVELS: Record<string, LevelDef> = {
     cardFactKey: 'card.burj-khalifa.fact',
     resultsFactKey: 'results.fact.burj-khalifa',
   },
+  'tokyo-neon': {
+    id: 'tokyo-neon',
+    countryKey: 'japan',
+    flag: '🇯🇵',
+    environmentId: 'tokyo-neon',
+    chaser: false,
+    createLevel: createTokyoNeonLevel,
+    landmarks: TOKYO_NEON_LANDMARKS,
+    areaNameKey: 'area.tokyo-neon',
+    areaInfoKey: 'area.tokyo-neon.info',
+    cardTitleKey: 'card.tokyo-neon.title',
+    cardFactKey: 'card.tokyo-neon.fact',
+    resultsFactKey: 'results.fact.tokyo-neon',
+  },
 }
 
 export function getLevel(id: string): LevelDef {
@@ -83,6 +98,7 @@ export const COUNTRY_LEVEL: Record<string, string> = {
   china: 'china-wall',
   slovakia: 'slovak-paradise',
   dubai: 'burj-khalifa',
+  japan: 'tokyo-neon',
 }
 
 // Characters offered in each country's wardrobe. The bear is the Slovak-themed
@@ -92,4 +108,5 @@ export const COUNTRY_CHARACTERS: Record<string, Character[]> = {
   china: ['boy', 'girl', 'cat'],
   slovakia: ['boy', 'girl', 'cat', 'bear'],
   dubai: ['boy', 'girl', 'cat', 'unicorn'],
+  japan: ['boy', 'girl', 'cat', 'ninja'],
 }

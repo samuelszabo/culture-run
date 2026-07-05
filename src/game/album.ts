@@ -135,4 +135,47 @@ export const ALBUM_ENTRIES: AlbumEntry[] = [
     factKey: 'landmark.dubai-frame.fact',
     icon: '🖼️',
   },
+  // ── Japonsko — Tokio v noci ────────────────────────────────
+  {
+    id: 'sushi',
+    category: 'food',
+    nameKey: 'food.sushi.name',
+    factKey: 'album.sushi.fact',
+    icon: '🍣',
+  },
+  {
+    id: 'ramen',
+    category: 'food',
+    nameKey: 'food.ramen.name',
+    factKey: 'album.ramen.fact',
+    icon: '🍜',
+  },
+  {
+    id: 'mochi',
+    category: 'food',
+    nameKey: 'food.mochi.name',
+    factKey: 'album.mochi.fact',
+    icon: '🍡',
+  },
+  {
+    id: 'tokyo-tower',
+    category: 'landmark',
+    nameKey: 'landmark.tokyo-tower',
+    factKey: 'landmark.tokyo-tower.fact',
+    icon: '🗼',
+  },
+  {
+    id: 'shibuya',
+    category: 'landmark',
+    nameKey: 'landmark.shibuya',
+    factKey: 'landmark.shibuya.fact',
+    icon: '🚦',
+  },
+  {
+    id: 'sensoji',
+    category: 'landmark',
+    nameKey: 'landmark.sensoji',
+    factKey: 'landmark.sensoji.fact',
+    icon: '⛩️',
+  },
 ]

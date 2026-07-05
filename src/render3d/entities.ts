@@ -490,6 +490,84 @@ function makeTowerTop(width: number, geos: THREE.BufferGeometry[], mats: THREE.M
   return group
 }
 
+const CAR_BODY_COLORS = [0xff3b5c, 0xffc21f, 0x2fd6c3, 0xff6ec7, 0x5b8cff, 0xff8a3d]
+let carColorIndex = 0
+
+function makeCar(width: number, geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const height = OBSTACLE_WORLD_HEIGHTS.car
+  const depth = toWorldSize(55)
+  const wheelR = height * 0.18
+
+  const bodyColor = CAR_BODY_COLORS[carColorIndex % CAR_BODY_COLORS.length]
+  carColorIndex++
+
+  const bodyGeo = new THREE.BoxGeometry(width, height * 0.58, depth)
+  const bodyMat = new THREE.MeshLambertMaterial({ color: bodyColor, emissive: bodyColor, emissiveIntensity: 0.35 })
+  geos.push(bodyGeo)
+  mats.push(bodyMat)
+  const body = new THREE.Mesh(bodyGeo, bodyMat)
+  body.position.y = height * 0.29
+  group.add(body)
+
+  const cabinGeo = new THREE.BoxGeometry(width * 0.64, height * 0.38, depth * 0.68)
+  const cabinMat = new THREE.MeshLambertMaterial({ color: bodyColor, emissive: bodyColor, emissiveIntensity: 0.25 })
+  geos.push(cabinGeo)
+  mats.push(cabinMat)
+  const cabin = new THREE.Mesh(cabinGeo, cabinMat)
+  cabin.position.y = height * 0.58 + height * 0.19
+  group.add(cabin)
+
+  const winMat = new THREE.MeshLambertMaterial({ color: 0x1a2530 })
+  mats.push(winMat)
+  const sideWinGeo = new THREE.BoxGeometry(0.02, height * 0.22, depth * 0.62)
+  geos.push(sideWinGeo)
+  for (const wx of [-width * 0.32, width * 0.32]) {
+    const win = new THREE.Mesh(sideWinGeo, winMat)
+    win.position.set(wx, height * 0.77, 0)
+    group.add(win)
+  }
+
+  const wheelMat = new THREE.MeshLambertMaterial({ color: 0x181818 })
+  mats.push(wheelMat)
+  const wheelGeo = new THREE.CylinderGeometry(wheelR, wheelR, 0.12, 10)
+  geos.push(wheelGeo)
+  const wheelPos: Array<[number, number]> = [
+    [-width * 0.42, depth * 0.32],
+    [width * 0.42, depth * 0.32],
+    [-width * 0.42, -depth * 0.32],
+    [width * 0.42, -depth * 0.32],
+  ]
+  for (const [wx, wz] of wheelPos) {
+    const wheel = new THREE.Mesh(wheelGeo, wheelMat)
+    wheel.rotation.z = Math.PI / 2
+    wheel.position.set(wx, wheelR, wz)
+    group.add(wheel)
+  }
+
+  const headlightMat = new THREE.MeshLambertMaterial({ color: 0xfff8e0, emissive: 0xffffff, emissiveIntensity: 0.8 })
+  mats.push(headlightMat)
+  const headlightGeo = new THREE.BoxGeometry(0.1, 0.06, 0.02)
+  geos.push(headlightGeo)
+  for (const hx of [-width * 0.3, width * 0.3]) {
+    const hl = new THREE.Mesh(headlightGeo, headlightMat)
+    hl.position.set(hx, height * 0.3, depth * 0.5 + 0.01)
+    group.add(hl)
+  }
+
+  const taillightMat = new THREE.MeshLambertMaterial({ color: 0xff2200, emissive: 0xff2200, emissiveIntensity: 0.7 })
+  mats.push(taillightMat)
+  const taillightGeo = new THREE.BoxGeometry(0.12, 0.06, 0.02)
+  geos.push(taillightGeo)
+  for (const hx of [-width * 0.3, width * 0.3]) {
+    const tl = new THREE.Mesh(taillightGeo, taillightMat)
+    tl.position.set(hx, height * 0.3, -depth * 0.5 - 0.01)
+    group.add(tl)
+  }
+
+  return group
+}
+
 function makeNoodles(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
   const group = new THREE.Group()
   const s = COLLECTIBLE_WORLD_SIZE
@@ -778,7 +856,6 @@ function makeLuqaimat(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THR
     group.add(b)
   }
 
-  // Honey-syrup drizzle highlight.
   const syrupMat = new THREE.MeshLambertMaterial({ color: 0xe8a83c })
   mats.push(syrupMat)
   const syrupGeo = new THREE.SphereGeometry(s * 0.04, 5, 4)
@@ -788,6 +865,94 @@ function makeLuqaimat(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THR
     const a = (i / 5) * Math.PI * 2
     d.position.set(Math.cos(a) * s * 0.14, s * 0.12, Math.sin(a) * s * 0.14)
     group.add(d)
+  }
+
+  return group
+}
+
+function makeSushi(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const s = COLLECTIBLE_WORLD_SIZE
+
+  const riceGeo = new THREE.SphereGeometry(s * 0.3, 8, 6)
+  const riceMat = new THREE.MeshLambertMaterial({ color: 0xf5f0e8 })
+  geos.push(riceGeo)
+  mats.push(riceMat)
+  const rice = new THREE.Mesh(riceGeo, riceMat)
+  rice.scale.set(1.3, 0.62, 0.92)
+  group.add(rice)
+
+  const noriGeo = new THREE.BoxGeometry(s * 0.62, s * 0.18, s * 0.38)
+  const noriMat = new THREE.MeshLambertMaterial({ color: 0x182818 })
+  geos.push(noriGeo)
+  mats.push(noriMat)
+  const nori = new THREE.Mesh(noriGeo, noriMat)
+  nori.position.y = -s * 0.08
+  group.add(nori)
+
+  const salmonGeo = new THREE.BoxGeometry(s * 0.6, s * 0.15, s * 0.36)
+  const salmonMat = new THREE.MeshLambertMaterial({ color: 0xf08060 })
+  geos.push(salmonGeo)
+  mats.push(salmonMat)
+  const salmon = new THREE.Mesh(salmonGeo, salmonMat)
+  salmon.position.y = s * 0.22
+  group.add(salmon)
+
+  return group
+}
+
+function makeRamen(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const s = COLLECTIBLE_WORLD_SIZE
+
+  const bowlGeo = new THREE.CylinderGeometry(s * 0.48, s * 0.38, s * 0.38, 12)
+  const bowlMat = new THREE.MeshLambertMaterial({ color: 0x2e1010 })
+  geos.push(bowlGeo)
+  mats.push(bowlMat)
+  const bowl = new THREE.Mesh(bowlGeo, bowlMat)
+  group.add(bowl)
+
+  const noodleMat = new THREE.MeshLambertMaterial({ color: 0xf0e8c0 })
+  mats.push(noodleMat)
+  const noodleGeo = new THREE.CylinderGeometry(0.022, 0.022, s * 0.55, 5)
+  geos.push(noodleGeo)
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2
+    const n = new THREE.Mesh(noodleGeo, noodleMat)
+    n.position.set(Math.cos(a) * s * 0.2, s * 0.25, Math.sin(a) * s * 0.2)
+    n.rotation.x = Math.PI * 0.15
+    group.add(n)
+  }
+
+  const toppingGeo = new THREE.CylinderGeometry(s * 0.08, s * 0.08, s * 0.1, 8)
+  const toppingMat = new THREE.MeshLambertMaterial({ color: 0xf0a8b8 })
+  geos.push(toppingGeo)
+  mats.push(toppingMat)
+  const topping = new THREE.Mesh(toppingGeo, toppingMat)
+  topping.position.y = s * 0.32
+  group.add(topping)
+
+  return group
+}
+
+function makeMochi(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const s = COLLECTIBLE_WORLD_SIZE
+
+  const mochiGeo = new THREE.SphereGeometry(s * 0.2, 8, 6)
+  geos.push(mochiGeo)
+  const mochiData: Array<[number, number, number, number]> = [
+    [0xf5c4ce, -s * 0.22, 0, 0],
+    [0xf0f0f5, s * 0.22, 0, s * 0.06],
+    [0xc4e8c4, 0, s * 0.12, -s * 0.12],
+  ]
+  for (const [color, px, py, pz] of mochiData) {
+    const mochiMat = new THREE.MeshLambertMaterial({ color })
+    mats.push(mochiMat)
+    const m = new THREE.Mesh(mochiGeo, mochiMat)
+    m.position.set(px, py, pz)
+    m.scale.y = 0.82
+    group.add(m)
   }
 
   return group
@@ -827,6 +992,8 @@ function buildObstacleEntry(
     group = makeCloudGap(width, geos, mats)
   } else if (kind === 'tower-top') {
     group = makeTowerTop(width, geos, mats)
+  } else if (kind === 'car') {
+    group = makeCar(width, geos, mats)
   } else {
     group = makeCarrier(geos, mats)
   }
@@ -946,6 +1113,12 @@ function buildCollectibleEntry(
     group = makeDatle(geos, mats)
   } else if (collectible.kind === 'luqaimat') {
     group = makeLuqaimat(geos, mats)
+  } else if (collectible.kind === 'sushi') {
+    group = makeSushi(geos, mats)
+  } else if (collectible.kind === 'ramen') {
+    group = makeRamen(geos, mats)
+  } else if (collectible.kind === 'mochi') {
+    group = makeMochi(geos, mats)
   } else {
     group = makeTea(geos, mats)
   }

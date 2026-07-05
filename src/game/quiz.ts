@@ -145,4 +145,50 @@ export const QUIZZES: Record<string, QuizQuestion[]> = {
       bonus: 25,
     },
   ],
+  'tokyo-neon': [
+    {
+      id: 'q1',
+      questionKey: 'quiz.tokyo-neon.q1.question',
+      optionKeys: [
+        'quiz.tokyo-neon.q1.opt0',
+        'quiz.tokyo-neon.q1.opt1',
+        'quiz.tokyo-neon.q1.opt2',
+      ],
+      correctIndex: 1,
+      bonus: 25,
+    },
+    {
+      id: 'q2',
+      questionKey: 'quiz.tokyo-neon.q2.question',
+      optionKeys: [
+        'quiz.tokyo-neon.q2.opt0',
+        'quiz.tokyo-neon.q2.opt1',
+        'quiz.tokyo-neon.q2.opt2',
+      ],
+      correctIndex: 0,
+      bonus: 25,
+    },
+    {
+      id: 'q3',
+      questionKey: 'quiz.tokyo-neon.q3.question',
+      optionKeys: [
+        'quiz.tokyo-neon.q3.opt0',
+        'quiz.tokyo-neon.q3.opt1',
+        'quiz.tokyo-neon.q3.opt2',
+      ],
+      correctIndex: 2,
+      bonus: 25,
+    },
+    {
+      id: 'q4',
+      questionKey: 'quiz.tokyo-neon.q4.question',
+      optionKeys: [
+        'quiz.tokyo-neon.q4.opt0',
+        'quiz.tokyo-neon.q4.opt1',
+        'quiz.tokyo-neon.q4.opt2',
+      ],
+      correctIndex: 1,
+      bonus: 25,
+    },
+  ],
 }

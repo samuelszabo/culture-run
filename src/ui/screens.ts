@@ -30,6 +30,9 @@ const REWARD_ICONS: Record<RewardId, string> = {
   'rainbow-wings': '🌈',
   'rainbow-tail': '🦄',
   'playable-unicorn': '🦄',
+  'neko-pet': '🐱',
+  'kitsune-pet': '🦊',
+  'playable-ninja': '🥷',
 }
 
 // Characters that always exist vs. those gated behind a reward unlock.
@@ -38,6 +41,7 @@ const BASE_CHARACTERS: Character[] = ['boy', 'girl', 'cat']
 function isCharacterUnlocked(ch: Character): boolean {
   if (ch === 'bear') return save.unlockedRewards.includes('playable-bear')
   if (ch === 'unicorn') return save.unlockedRewards.includes('playable-unicorn')
+  if (ch === 'ninja') return save.unlockedRewards.includes('playable-ninja')
   return true
 }
 
@@ -178,7 +182,7 @@ function renderCountry(): void {
     { key: 'china', flag: '🇨🇳', unlocked: true },
     { key: 'slovakia', flag: '🇸🇰', unlocked: true },
     { key: 'dubai', flag: '🇦🇪', unlocked: true },
-    { key: 'japan', flag: '🇯🇵', unlocked: false },
+    { key: 'japan', flag: '🇯🇵', unlocked: true },
     { key: 'italy', flag: '🇮🇹', unlocked: false },
     { key: 'egypt', flag: '🇪🇬', unlocked: false },
     { key: 'france', flag: '🇫🇷', unlocked: false },

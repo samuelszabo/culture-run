@@ -43,6 +43,9 @@ export const OBSTACLE_WORLD_HEIGHTS: Record<ObstacleKind, number> = {
   'cloud-gap': 0.3,
   // Dubai: a skyscraper top poking up through the clouds — tall lateral dodge.
   'tower-top': 2.8,
+  // Tokyo: a parked car blocking a lane — low enough to read as a vehicle, tall
+  // enough to force a lateral dodge (not jumpable).
+  car: 1.0,
 }
 
 export const CAMERA_HEIGHT = 3.4
