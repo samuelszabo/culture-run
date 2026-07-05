@@ -666,8 +666,8 @@ function buildFalcon(): { petGroup: THREE.Group; wingL: THREE.Mesh; wingR: THREE
   return { petGroup, wingL, wingR }
 }
 
-const NINJA_DARK = 0x1c1c2e
-const NINJA_RED = 0xd23b3b
+const NINJA_DARK = 0x4b57a0
+const NINJA_RED = 0xe84a4a
 
 const NEKO_CREAM = 0xfff8f0
 const NEKO_COLLAR = 0xd23b3b

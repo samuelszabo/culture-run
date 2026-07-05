@@ -127,7 +127,7 @@ function screenToGameX(clientX: number): number {
   return ROAD_LEFT + (clientX / window.innerWidth) * (ROAD_RIGHT - ROAD_LEFT)
 }
 
-initHud()
+initHud(goHome)
 hideHud()
 initScreens(save, () => persistSave(save), {
   onStartGame: (levelId: string) => {

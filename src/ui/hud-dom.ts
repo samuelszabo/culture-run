@@ -13,11 +13,18 @@ let lastProgress = -1
 let lastScore = -1
 let lastBest = -1
 
-export function initHud(): void {
+export function initHud(onExit: () => void): void {
   if (container) return
 
   container = document.createElement('div')
   container.className = 'hud-container'
+
+  const homeBtn = document.createElement('button')
+  homeBtn.className = 'hud-home'
+  homeBtn.textContent = '🏠'
+  homeBtn.setAttribute('aria-label', t('hud.menu'))
+  homeBtn.addEventListener('click', onExit)
+  container.appendChild(homeBtn)
 
   const heartsEl = document.createElement('div')
   heartsEl.className = 'hud-hearts'
