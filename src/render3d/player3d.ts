@@ -81,6 +81,9 @@ export interface Player3D {
   kitsuneGroup: THREE.Group | null
   kitsuneLegs: THREE.Group[]
   kitsuneTailSegments: THREE.Mesh[]
+  // Ninja headband tails (animated)
+  ninjaHeadbandTailL: THREE.Mesh | null
+  ninjaHeadbandTailR: THREE.Mesh | null
   // Ground contact-shadow (cloud level only): a dark disc on the cloud surface
   // that stays put while the player jumps, so feet/landing spot stay readable.
   shadow: THREE.Mesh | null
@@ -676,7 +679,7 @@ const KITSUNE_WHITE = 0xfff5e0
 function buildNekoPet(): { petGroup: THREE.Group; petLegs: THREE.Group[]; petTailSegments: THREE.Mesh[] } {
   const petGroup = new THREE.Group()
 
-  const headMesh = box(CAT_HEAD_S, CAT_HEAD_S, CAT_HEAD_S, NEKO_CREAM)
+  const headMesh = box(CAT_HEAD_S * 1.05, CAT_HEAD_S, CAT_HEAD_S, NEKO_CREAM)
   headMesh.position.set(0, CAT_HEAD_Y, CAT_HEAD_Z)
   petGroup.add(headMesh)
 
@@ -684,36 +687,50 @@ function buildNekoPet(): { petGroup: THREE.Group; petLegs: THREE.Group[]; petTai
   torsoMesh.position.set(0, CAT_BODY_Y, CAT_BODY_Z)
   petGroup.add(torsoMesh)
 
-  const earW = H * 0.09
-  const earH = H * 0.11
+  const earW = H * 0.065
+  const earH = H * 0.15
   const earTopY = CAT_HEAD_Y + CAT_HEAD_S / 2 + earH / 2
 
   const earL = box(earW, earH, earW * 0.5, NEKO_CREAM)
-  earL.position.set(-(CAT_HEAD_S * 0.28), earTopY, CAT_HEAD_Z)
+  earL.position.set(-(CAT_HEAD_S * 0.30), earTopY, CAT_HEAD_Z)
   petGroup.add(earL)
 
   const earR = box(earW, earH, earW * 0.5, NEKO_CREAM)
-  earR.position.set(CAT_HEAD_S * 0.28, earTopY, CAT_HEAD_Z)
+  earR.position.set(CAT_HEAD_S * 0.30, earTopY, CAT_HEAD_Z)
   petGroup.add(earR)
 
-  const earInnerW = earW * 0.55
-  const earInnerH = earH * 0.65
+  const earInnerW = earW * 0.52
+  const earInnerH = earH * 0.68
   const earInnerL = box(earInnerW, earInnerH, earW * 0.3, PET_PINK)
-  earInnerL.position.set(-(CAT_HEAD_S * 0.28), earTopY + earH * 0.04, CAT_HEAD_Z - earW * 0.25)
+  earInnerL.position.set(-(CAT_HEAD_S * 0.30), earTopY + earH * 0.04, CAT_HEAD_Z - earW * 0.28)
   petGroup.add(earInnerL)
 
   const earInnerR = box(earInnerW, earInnerH, earW * 0.3, PET_PINK)
-  earInnerR.position.set(CAT_HEAD_S * 0.28, earTopY + earH * 0.04, CAT_HEAD_Z - earW * 0.25)
+  earInnerR.position.set(CAT_HEAD_S * 0.30, earTopY + earH * 0.04, CAT_HEAD_Z - earW * 0.28)
   petGroup.add(earInnerR)
 
-  const snoutW = CAT_HEAD_S * 0.55
-  const snoutH = CAT_HEAD_S * 0.28
+  const faceZ = CAT_HEAD_Z - CAT_HEAD_S / 2 - H * 0.01
+  const eyeW = CAT_HEAD_S * 0.14
+  const eyeH = CAT_HEAD_S * 0.15
+  const eyeY = CAT_HEAD_Y + CAT_HEAD_S * 0.10
+
+  for (const ex of [-CAT_HEAD_S * 0.24, CAT_HEAD_S * 0.24]) {
+    const sclera = box(eyeW, eyeH, H * 0.025, 0xffffff)
+    sclera.position.set(ex, eyeY, faceZ)
+    petGroup.add(sclera)
+    const pupil = box(eyeW * 0.48, eyeH * 0.60, H * 0.025, 0x1a0d2e)
+    pupil.position.set(ex, eyeY, faceZ - H * 0.015)
+    petGroup.add(pupil)
+  }
+
+  const snoutW = CAT_HEAD_S * 0.50
+  const snoutH = CAT_HEAD_S * 0.24
   const snout = box(snoutW, snoutH, H * 0.06, PET_WHITE)
-  snout.position.set(0, CAT_HEAD_Y - CAT_HEAD_S * 0.1, CAT_HEAD_Z - CAT_HEAD_S / 2 - H * 0.02)
+  snout.position.set(0, CAT_HEAD_Y - CAT_HEAD_S * 0.14, faceZ)
   petGroup.add(snout)
 
-  const nose = box(H * 0.06, H * 0.04, H * 0.04, PET_PINK)
-  nose.position.set(0, CAT_HEAD_Y + CAT_HEAD_S * 0.08, CAT_HEAD_Z - CAT_HEAD_S / 2 - H * 0.03)
+  const nose = box(H * 0.055, H * 0.038, H * 0.04, PET_PINK)
+  nose.position.set(0, CAT_HEAD_Y - CAT_HEAD_S * 0.04, faceZ - H * 0.015)
   petGroup.add(nose)
 
   const collarH = H * 0.055
@@ -744,12 +761,12 @@ function buildNekoPet(): { petGroup: THREE.Group; petLegs: THREE.Group[]; petTai
   }
 
   const petTailSegments: THREE.Mesh[] = []
-  const tailSegCount = 4
-  const tailSegSize0 = H * 0.11
+  const tailSegCount = 5
+  const tailSegSize0 = H * 0.13
   for (let i = 0; i < tailSegCount; i++) {
     const t = i / (tailSegCount - 1)
-    const size = tailSegSize0 * (1 - t * 0.4)
-    const color = i === tailSegCount - 1 ? PET_WHITE : NEKO_CREAM
+    const size = tailSegSize0 * (1 - t * 0.42)
+    const color = i >= tailSegCount - 1 ? PET_WHITE : NEKO_CREAM
     const tailSeg = box(size, size, size, color)
     petGroup.add(tailSeg)
     petTailSegments.push(tailSeg)
@@ -762,48 +779,74 @@ function buildNekoPet(): { petGroup: THREE.Group; petLegs: THREE.Group[]; petTai
 function buildKitsune(): { petGroup: THREE.Group; petLegs: THREE.Group[]; petTailSegments: THREE.Mesh[] } {
   const petGroup = new THREE.Group()
 
-  const headMesh = box(CAT_HEAD_S, CAT_HEAD_S, CAT_HEAD_S, KITSUNE_ORANGE)
+  const kitBodyW = CAT_BODY_W * 0.82
+
+  const headMesh = box(CAT_HEAD_S * 0.96, CAT_HEAD_S, CAT_HEAD_S * 0.94, KITSUNE_ORANGE)
   headMesh.position.set(0, CAT_HEAD_Y, CAT_HEAD_Z)
   petGroup.add(headMesh)
 
-  const torsoMesh = box(CAT_BODY_W, CAT_BODY_H, CAT_BODY_L, KITSUNE_ORANGE)
+  const torsoMesh = box(kitBodyW, CAT_BODY_H, CAT_BODY_L, KITSUNE_ORANGE)
   torsoMesh.position.set(0, CAT_BODY_Y, CAT_BODY_Z)
   petGroup.add(torsoMesh)
 
-  const earW = H * 0.08
-  const earH = H * 0.15
+  const belly = box(kitBodyW * 0.65, CAT_BODY_H * 0.70, CAT_BODY_L * 0.85, KITSUNE_WHITE)
+  belly.position.set(0, CAT_BODY_Y - CAT_BODY_H * 0.16, CAT_BODY_Z)
+  petGroup.add(belly)
+
+  const earW = H * 0.060
+  const earH = H * 0.18
   const earTopY = CAT_HEAD_Y + CAT_HEAD_S / 2 + earH / 2
 
   const earL = box(earW, earH, earW * 0.5, KITSUNE_ORANGE)
-  earL.position.set(-(CAT_HEAD_S * 0.26), earTopY, CAT_HEAD_Z)
+  earL.position.set(-(CAT_HEAD_S * 0.28), earTopY, CAT_HEAD_Z)
   petGroup.add(earL)
 
   const earR = box(earW, earH, earW * 0.5, KITSUNE_ORANGE)
-  earR.position.set(CAT_HEAD_S * 0.26, earTopY, CAT_HEAD_Z)
+  earR.position.set(CAT_HEAD_S * 0.28, earTopY, CAT_HEAD_Z)
   petGroup.add(earR)
 
-  const earInnerW = earW * 0.5
-  const earInnerH = earH * 0.65
-  const earInnerL = box(earInnerW, earInnerH, earW * 0.3, KITSUNE_WHITE)
-  earInnerL.position.set(-(CAT_HEAD_S * 0.26), earTopY + earH * 0.04, CAT_HEAD_Z - earW * 0.25)
+  const earInnerW = earW * 0.48
+  const earInnerH = earH * 0.68
+  const earInnerL = box(earInnerW, earInnerH, earW * 0.30, KITSUNE_WHITE)
+  earInnerL.position.set(-(CAT_HEAD_S * 0.28), earTopY + earH * 0.04, CAT_HEAD_Z - earW * 0.28)
   petGroup.add(earInnerL)
 
-  const earInnerR = box(earInnerW, earInnerH, earW * 0.3, KITSUNE_WHITE)
-  earInnerR.position.set(CAT_HEAD_S * 0.26, earTopY + earH * 0.04, CAT_HEAD_Z - earW * 0.25)
+  const earInnerR = box(earInnerW, earInnerH, earW * 0.30, KITSUNE_WHITE)
+  earInnerR.position.set(CAT_HEAD_S * 0.28, earTopY + earH * 0.04, CAT_HEAD_Z - earW * 0.28)
   petGroup.add(earInnerR)
 
-  const snoutW = CAT_HEAD_S * 0.55
-  const snoutH = CAT_HEAD_S * 0.28
-  const snout = box(snoutW, snoutH, H * 0.06, KITSUNE_WHITE)
-  snout.position.set(0, CAT_HEAD_Y - CAT_HEAD_S * 0.1, CAT_HEAD_Z - CAT_HEAD_S / 2 - H * 0.02)
-  petGroup.add(snout)
+  const faceZ = CAT_HEAD_Z - CAT_HEAD_S / 2 - H * 0.01
+  const eyeW = CAT_HEAD_S * 0.13
+  const eyeH = CAT_HEAD_S * 0.11
+  const eyeY = CAT_HEAD_Y + CAT_HEAD_S * 0.11
 
-  const nose = box(H * 0.05, H * 0.035, H * 0.04, 0x1a1a2e)
-  nose.position.set(0, CAT_HEAD_Y + CAT_HEAD_S * 0.08, CAT_HEAD_Z - CAT_HEAD_S / 2 - H * 0.03)
-  petGroup.add(nose)
+  for (const ex of [-CAT_HEAD_S * 0.23, CAT_HEAD_S * 0.23]) {
+    const sclera = box(eyeW, eyeH, H * 0.025, 0xffffff)
+    sclera.position.set(ex, eyeY, faceZ)
+    petGroup.add(sclera)
+    const pupil = box(eyeW * 0.44, eyeH * 0.55, H * 0.025, 0x1a0a00)
+    pupil.position.set(ex, eyeY, faceZ - H * 0.015)
+    petGroup.add(pupil)
+  }
+
+  const snoutBaseW = CAT_HEAD_S * 0.44
+  const snoutBaseH = CAT_HEAD_S * 0.24
+  const snoutBase = box(snoutBaseW, snoutBaseH, H * 0.07, KITSUNE_WHITE)
+  snoutBase.position.set(0, CAT_HEAD_Y - CAT_HEAD_S * 0.08, faceZ - H * 0.02)
+  petGroup.add(snoutBase)
+
+  const snoutTipW = CAT_HEAD_S * 0.26
+  const snoutTipH = CAT_HEAD_S * 0.16
+  const snoutTip = box(snoutTipW, snoutTipH, H * 0.06, KITSUNE_WHITE)
+  snoutTip.position.set(0, CAT_HEAD_Y - CAT_HEAD_S * 0.15, faceZ - H * 0.07)
+  petGroup.add(snoutTip)
+
+  const noseKit = box(H * 0.048, H * 0.033, H * 0.04, 0x1a0a00)
+  noseKit.position.set(0, CAT_HEAD_Y - CAT_HEAD_S * 0.04, faceZ - H * 0.016)
+  petGroup.add(noseKit)
 
   const petLegs: THREE.Group[] = []
-  const halfX = CAT_BODY_W / 2 + CAT_LEG_W * 0.1
+  const halfX = kitBodyW / 2 + CAT_LEG_W * 0.1
   const legPositions = [
     [-halfX, CAT_FRONT_LEG_Z],
     [ halfX, CAT_FRONT_LEG_Z],
@@ -811,7 +854,7 @@ function buildKitsune(): { petGroup: THREE.Group; petLegs: THREE.Group[]; petTai
     [ halfX, CAT_REAR_LEG_Z],
   ] as const
   for (const [lx, lz] of legPositions) {
-    const legMesh = box(CAT_LEG_W, CAT_LEG_H, CAT_LEG_W, KITSUNE_ORANGE)
+    const legMesh = box(CAT_LEG_W * 0.88, CAT_LEG_H, CAT_LEG_W * 0.88, KITSUNE_ORANGE)
     const lg = makeLimbGroup(legMesh, CAT_LEG_H, CAT_BODY_Y)
     lg.position.set(lx, 0, lz)
     petGroup.add(lg)
@@ -819,12 +862,12 @@ function buildKitsune(): { petGroup: THREE.Group; petLegs: THREE.Group[]; petTai
   }
 
   const petTailSegments: THREE.Mesh[] = []
-  const tailSegCount = 5
-  const tailSegSize0 = H * 0.13
+  const tailSegCount = 7
+  const tailSegSize0 = H * 0.155
   for (let i = 0; i < tailSegCount; i++) {
     const t = i / (tailSegCount - 1)
-    const size = tailSegSize0 * (1 - t * 0.3)
-    const color = i >= tailSegCount - 1 ? 0xffffff : KITSUNE_ORANGE
+    const size = tailSegSize0 * (1 - t * 0.45)
+    const color = i >= tailSegCount - 2 ? KITSUNE_WHITE : KITSUNE_ORANGE
     const tailSeg = box(size, size, size, color)
     petGroup.add(tailSeg)
     petTailSegments.push(tailSeg)
@@ -879,16 +922,54 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     body.add(muzzle)
   }
 
-  if (isNinja) {
-    const slitH = HEAD_H * 0.13
-    const eyeSlit = box(BODY_W * 0.88 * 0.72, slitH, BODY_D * 0.10, 0xf5c07a)
-    eyeSlit.position.set(0, HEAD_Y_CENTER + HEAD_H * 0.06, -(BODY_D * 0.88 / 2 + BODY_D * 0.05))
-    body.add(eyeSlit)
+  let ninjaHeadbandTailL: THREE.Mesh | null = null
+  let ninjaHeadbandTailR: THREE.Mesh | null = null
 
-    const bandH = HEAD_H * 0.13
+  if (isNinja) {
+    const faceZ = -(BODY_D * 0.88 / 2 + BODY_D * 0.05)
+    const backZ  =  BODY_D * 0.88 / 2 + BODY_D * 0.05
+
+    const maskH = HEAD_H * 0.34
+    const mask = box(BODY_W * 0.88 * 1.01, maskH, BODY_D * 0.88 * 1.01, 0x252538)
+    mask.position.set(0, HEAD_Y_CENTER - HEAD_H * 0.13, 0)
+    body.add(mask)
+
+    const eyeW = HEAD_H * 0.17
+    const eyeH = HEAD_H * 0.14
+    const eyeY = HEAD_Y_CENTER + HEAD_H * 0.09
+    for (const ex of [-BODY_W * 0.88 * 0.22, BODY_W * 0.88 * 0.22]) {
+      const sclera = box(eyeW, eyeH, BODY_D * 0.07, 0xdde8f0)
+      sclera.position.set(ex, eyeY, faceZ)
+      body.add(sclera)
+      const pupil = box(eyeW * 0.44, eyeH * 0.56, BODY_D * 0.06, 0x0d0d1a)
+      pupil.position.set(ex, eyeY, faceZ - BODY_D * 0.04)
+      body.add(pupil)
+    }
+
+    const bandH = HEAD_H * 0.12
     const headband = box(BODY_W * 0.88 * 1.02, bandH, BODY_D * 0.88 * 1.02, NINJA_RED)
-    headband.position.set(0, HEAD_Y_CENTER + HEAD_H * 0.28, 0)
+    headband.position.set(0, HEAD_Y_CENTER + HEAD_H * 0.30, 0)
     body.add(headband)
+
+    ninjaHeadbandTailL = box(HEAD_H * 0.11, HEAD_H * 0.30, HEAD_H * 0.08, NINJA_RED)
+    ninjaHeadbandTailL.position.set(-BODY_W * 0.88 * 0.25, HEAD_Y_CENTER + HEAD_H * 0.14, backZ)
+    body.add(ninjaHeadbandTailL)
+
+    ninjaHeadbandTailR = box(HEAD_H * 0.11, HEAD_H * 0.28, HEAD_H * 0.08, NINJA_RED)
+    ninjaHeadbandTailR.position.set(BODY_W * 0.88 * 0.25, HEAD_Y_CENTER + HEAD_H * 0.12, backZ)
+    body.add(ninjaHeadbandTailR)
+
+    const sashH = TORSO_H * 0.17
+    const sash = box(BODY_W * 1.04, sashH, BODY_D * 1.04, NINJA_RED)
+    sash.position.set(0, TORSO_Y_BOTTOM + sashH * 0.7, 0)
+    body.add(sash)
+
+    const scabbardL = H * 0.36
+    const scabbardW = H * 0.055
+    const scabbard = box(scabbardW, scabbardL, scabbardW * 0.5, 0x2e1a0a)
+    scabbard.position.set(BODY_W * 0.30, TORSO_Y_BOTTOM + TORSO_H * 0.52, BODY_D / 2 + scabbardW * 0.35)
+    scabbard.rotation.z = 0.38
+    body.add(scabbard)
   }
 
   // --- Torso ---
@@ -1441,6 +1522,8 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     kitsuneGroup,
     kitsuneLegs,
     kitsuneTailSegments,
+    ninjaHeadbandTailL,
+    ninjaHeadbandTailR,
     shadow,
     scene,
   }
@@ -1757,7 +1840,7 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
     if (p.falconWingR) p.falconWingR.rotation.z = -flap
   }
 
-  // Neko-pet cosmetic animation (mirrors cat-pet)
+  // Neko-pet cosmetic animation
   if (p.nekoPetGroup) {
     const petGroup = p.nekoPetGroup
     petGroup.position.x = 0.42 + Math.sin(elapsed * 2.3) * 0.07
@@ -1778,21 +1861,23 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
       petGroup.position.y = 0
     }
 
+    // Upright curled tail (maneki-neko): rises from rear then arcs toward head (−z)
     const nekoTailCount = p.nekoPetTailSegments.length
-    const nekoTailRearZ = CAT_BODY_Z + CAT_BODY_L / 2
-    const nekoTailStepZ = H * 0.10
-    const nekoTailStepY = H * 0.13
+    const tailBaseZ = CAT_BODY_Z + CAT_BODY_L * 0.38
+    const tailBaseY = CAT_BODY_Y + CAT_BODY_H * 0.48
+    const arcR = H * 0.30
     for (let i = 0; i < nekoTailCount; i++) {
       const seg = p.nekoPetTailSegments[i]
       const t = (i + 1) / nekoTailCount
-      const wave = Math.sin(elapsed * 3.5 + i * 0.9) * 0.05
-      const segY = CAT_BODY_Y + t * nekoTailStepY * nekoTailCount
-      const segZ = nekoTailRearZ + t * nekoTailStepZ * nekoTailCount
-      seg.position.set(wave, segY, segZ)
+      const angle = t * Math.PI * 0.70
+      const sway = Math.sin(elapsed * 2.5 + i * 0.55) * 0.04
+      const segY = tailBaseY + Math.cos(0) * arcR * t - Math.cos(angle) * arcR * t * 0.45
+      const segZ = tailBaseZ - Math.sin(angle) * arcR * t * 0.55
+      seg.position.set(sway, segY, segZ)
     }
   }
 
-  // Kitsune-pet cosmetic animation (quadruped trot + bushy arcing tail)
+  // Kitsune-pet cosmetic animation (quadruped trot + big bushy arcing tail)
   if (p.kitsuneGroup) {
     const kGroup = p.kitsuneGroup
     kGroup.position.x = -0.42 + Math.sin(elapsed * 2.1) * 0.08
@@ -1813,17 +1898,26 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
       kGroup.position.y = 0
     }
 
+    // Bushy tail: sweeping arc upward and over the back (+z rear)
     const kTailCount = p.kitsuneTailSegments.length
-    const kTailRearZ = CAT_BODY_Z + CAT_BODY_L / 2
+    const kTailBaseZ = CAT_BODY_Z + CAT_BODY_L * 0.42
+    const kTailBaseY = CAT_BODY_Y + CAT_BODY_H * 0.42
     for (let i = 0; i < kTailCount; i++) {
       const seg = p.kitsuneTailSegments[i]
       const t = (i + 1) / kTailCount
-      const arc = Math.sin(t * Math.PI * 0.7)
-      const wave = Math.sin(elapsed * 2.8 + i * 0.8) * 0.05
-      const segY = CAT_BODY_Y + arc * H * 0.5 + t * H * 0.15
-      const segZ = kTailRearZ + t * H * 0.14
+      const arc = Math.sin(t * Math.PI * 0.82)
+      const wave = Math.sin(elapsed * 2.8 + i * 0.75) * 0.06
+      const segY = kTailBaseY + arc * H * 0.60 + t * H * 0.06
+      const segZ = kTailBaseZ + t * H * 0.22
       seg.position.set(wave, segY, segZ)
     }
+  }
+
+  // Ninja headband tail sway (wired to elapsed, same rhythm as run)
+  if (p.ninjaHeadbandTailL && p.ninjaHeadbandTailR) {
+    const swing = phase === 'running' ? Math.sin(distance * 0.05) : Math.sin(elapsed * 3)
+    p.ninjaHeadbandTailL.rotation.x  =  swing * 0.22
+    p.ninjaHeadbandTailR.rotation.x  = -swing * 0.18
   }
 
   // Bear chaser animation

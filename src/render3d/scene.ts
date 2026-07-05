@@ -102,14 +102,14 @@ const ENV_CONFIGS: Record<string, EnvConfig> = {
     // Night in a neon city: a deep blue-black sky, dim cool ambient so the
     // emissive neon signs and windows built in the environment carry the scene.
     skyColor: 0x0a0a1e,
-    ambientColor: 0x3a3d66,
-    ambientIntensity: 0.72,
-    sunColor: 0x9fb4ff,
-    sunIntensity: 0.7,
+    ambientColor: 0x4a4e7a,
+    ambientIntensity: 0.95,
+    sunColor: 0xbfccff,
+    sunIntensity: 0.95,
     sunPosition: [-6, 12, 4],
-    hemiSky: 0x1a1c3a,
-    hemiGround: 0x141018,
-    hemiIntensity: 0.5,
+    hemiSky: 0x2a2d55,
+    hemiGround: 0x1c1822,
+    hemiIntensity: 0.7,
     // Tight fog so the night city fades into darkness a bit closer in.
     fogNear: 30,
     fogFar: 95,

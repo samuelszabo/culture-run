@@ -9,9 +9,11 @@ import {
 import { Landmark } from './landmark'
 import { Level } from './china-wall'
 
-// Tokio v noci — zaparkované autá blokujú striedavo ľavý a pravý pruh.
-// Hráč uhýba do strán — žiadne skoky, žiadne medzery. Čistá laterálna
-// mechanika (ako čínske stánky). Max skóre = 72 × 15 = 1080.
+// Tokio v noci — zaparkované autá blokujú pruhy nočnej ulice. Cesta má tri
+// pruhy; každý rad je náhodný: raz jedno auto, raz rad dvoch áut s jedinou
+// medzerou. Voľný pruh sa mení nepravidelne, takže hráč musí reagovať, nie iba
+// striedavo kľučkovať. Rozostup rastie s dĺžkou úhybu, aby bol prejazd vždy
+// férový. Žiadne skoky. Max skóre = 72 × 15 = 1080.
 
 function mulberry32(seed: number): () => number {
   let s = seed
@@ -24,34 +26,76 @@ function mulberry32(seed: number): () => number {
   }
 }
 
-const ROAD_CENTER = (ROAD_LEFT + ROAD_RIGHT) / 2
 const ROAD_WIDTH = ROAD_RIGHT - ROAD_LEFT
+const LANE_WIDTH = ROAD_WIDTH / 3
+const LANES = [
+  ROAD_LEFT + LANE_WIDTH * 0.5,
+  ROAD_LEFT + LANE_WIDTH * 1.5,
+  ROAD_LEFT + LANE_WIDTH * 2.5,
+]
+const CAR_WIDTH = LANE_WIDTH * 0.9
 
-const CAR_LANE = 190
-const CAR_WIDTH = ROAD_WIDTH - CAR_LANE
-
-const FEATURE_START = 1400
+const FEATURE_START = 1600
 const FEATURE_END = TRACK_LENGTH - 700
-
-function openLaneCenter(car: Obstacle): number {
-  return car.x < ROAD_CENTER
-    ? (car.x + car.w / 2 + ROAD_RIGHT) / 2
-    : (ROAD_LEFT + car.x - car.w / 2) / 2
-}
 
 interface Waypoint {
   trackY: number
   x: number
 }
 
-function buildSafePath(cars: Obstacle[]): Waypoint[] {
-  return cars
-    .map((c) => ({ trackY: c.trackY, x: openLaneCenter(c) }))
-    .sort((a, b) => a.trackY - b.trackY)
+function createFeatures(): { cars: Obstacle[]; waypoints: Waypoint[] } {
+  const rand = mulberry32(0xc0ff33)
+  const cars: Obstacle[] = []
+  const waypoints: Waypoint[] = []
+
+  let trackY = FEATURE_START
+  let prevOpen = 1
+
+  while (true) {
+    const progress = (trackY - FEATURE_START) / (FEATURE_END - FEATURE_START)
+
+    const r = rand()
+    let openLane: number
+    if (progress < 0.12) {
+      const step = r < 0.4 ? 0 : r < 0.7 ? -1 : 1
+      openLane = Math.max(0, Math.min(2, prevOpen + step))
+    } else {
+      openLane = Math.floor(rand() * 3)
+    }
+
+    const laneDist = Math.abs(openLane - prevOpen)
+    const spacing = 380 - progress * 80 + laneDist * 95 + (rand() - 0.5) * 50
+    trackY += spacing
+    if (trackY > FEATURE_END) break
+
+    const isDouble = progress >= 0.12 && rand() < 0.3 + progress * 0.3
+    let blocked: number[]
+    if (isDouble) {
+      blocked = [0, 1, 2].filter((l) => l !== openLane)
+    } else if (openLane !== prevOpen) {
+      blocked = [prevOpen]
+    } else {
+      blocked = [prevOpen === 1 ? (rand() < 0.5 ? 0 : 2) : 1]
+    }
+
+    for (const lane of blocked) {
+      cars.push({
+        kind: 'car',
+        x: LANES[lane],
+        trackY,
+        w: CAR_WIDTH,
+        h: 38 + Math.floor(rand() * 10),
+      })
+    }
+    waypoints.push({ trackY, x: LANES[openLane] })
+    prevOpen = openLane
+  }
+
+  return { cars, waypoints }
 }
 
 function pathXAt(trackY: number, path: Waypoint[]): number {
-  if (path.length === 0) return ROAD_CENTER
+  if (path.length === 0) return LANES[1]
   if (trackY <= path[0].trackY) return path[0].x
   if (trackY >= path[path.length - 1].trackY) return path[path.length - 1].x
   for (let i = 0; i < path.length - 1; i++) {
@@ -62,44 +106,21 @@ function pathXAt(trackY: number, path: Waypoint[]): number {
       return a.x + t * (b.x - a.x)
     }
   }
-  return ROAD_CENTER
-}
-
-function createParkedCars(): Obstacle[] {
-  const rand = mulberry32(0xc0ff33)
-  const cars: Obstacle[] = []
-
-  let trackY = FEATURE_START
-  let carSide = 1
-
-  while (trackY <= FEATURE_END) {
-    const progress = (trackY - FEATURE_START) / (FEATURE_END - FEATURE_START)
-    const spacing = 360 - progress * 110
-    trackY += spacing + (rand() - 0.5) * 40
-    if (trackY > FEATURE_END) break
-
-    carSide = -carSide
-    const cx =
-      carSide < 0 ? ROAD_LEFT + CAR_WIDTH / 2 : ROAD_RIGHT - CAR_WIDTH / 2
-    cars.push({ kind: 'car', x: cx, trackY, w: CAR_WIDTH, h: 40 })
-  }
-
-  return cars
+  return LANES[1]
 }
 
 const FOOD_KINDS: CollectibleKind[] = ['sushi', 'ramen', 'mochi']
 const PICKUP_POINTS = 15
 const PICKUP_TARGET = 72
 
-function createCarCollectibles(cars: Obstacle[]): Collectible[] {
+function createCarCollectibles(waypoints: Waypoint[]): Collectible[] {
   const rand = mulberry32(0x5eed43)
-  const path = buildSafePath(cars)
   const collectibles: Collectible[] = []
   let trackY = 1500
   let i = 0
   let inCluster = 0
   while (trackY <= 18500 && collectibles.length < PICKUP_TARGET) {
-    const x = pathXAt(trackY, path)
+    const x = pathXAt(trackY, waypoints)
     collectibles.push({
       kind: FOOD_KINDS[i % FOOD_KINDS.length],
       x,
@@ -129,8 +150,8 @@ export const TOKYO_NEON_LANDMARKS: Landmark[] = [
 ]
 
 export function createTokyoNeonLevel(): Level {
-  const cars = createParkedCars()
-  const collectibles = createCarCollectibles(cars)
+  const { cars, waypoints } = createFeatures()
+  const collectibles = createCarCollectibles(waypoints)
   return {
     obstacles: cars,
     collectibles,

@@ -497,72 +497,141 @@ function makeCar(width: number, geos: THREE.BufferGeometry[], mats: THREE.Materi
   const group = new THREE.Group()
   const height = OBSTACLE_WORLD_HEIGHTS.car
   const depth = toWorldSize(55)
-  const wheelR = height * 0.18
+  const wheelR = height * 0.16
 
   const bodyColor = CAR_BODY_COLORS[carColorIndex % CAR_BODY_COLORS.length]
   carColorIndex++
 
-  const bodyGeo = new THREE.BoxGeometry(width, height * 0.58, depth)
-  const bodyMat = new THREE.MeshLambertMaterial({ color: bodyColor, emissive: bodyColor, emissiveIntensity: 0.35 })
+  const bodyGeo = new THREE.BoxGeometry(width, height * 0.46, depth)
+  const bodyMat = new THREE.MeshLambertMaterial({ color: bodyColor, emissive: bodyColor, emissiveIntensity: 0.3 })
   geos.push(bodyGeo)
   mats.push(bodyMat)
   const body = new THREE.Mesh(bodyGeo, bodyMat)
-  body.position.y = height * 0.29
+  body.position.y = wheelR + height * 0.23
   group.add(body)
 
-  const cabinGeo = new THREE.BoxGeometry(width * 0.64, height * 0.38, depth * 0.68)
-  const cabinMat = new THREE.MeshLambertMaterial({ color: bodyColor, emissive: bodyColor, emissiveIntensity: 0.25 })
+  const cabinBaseY = wheelR + height * 0.46
+  const cabinGeo = new THREE.BoxGeometry(width * 0.72, height * 0.36, depth * 0.5)
+  const cabinMat = new THREE.MeshLambertMaterial({ color: bodyColor, emissive: bodyColor, emissiveIntensity: 0.22 })
   geos.push(cabinGeo)
   mats.push(cabinMat)
   const cabin = new THREE.Mesh(cabinGeo, cabinMat)
-  cabin.position.y = height * 0.58 + height * 0.19
+  cabin.position.set(0, cabinBaseY + height * 0.18, depth * 0.04)
   group.add(cabin)
 
-  const winMat = new THREE.MeshLambertMaterial({ color: 0x1a2530 })
-  mats.push(winMat)
-  const sideWinGeo = new THREE.BoxGeometry(0.02, height * 0.22, depth * 0.62)
+  const glassMat = new THREE.MeshLambertMaterial({ color: 0x1a2a35, transparent: true, opacity: 0.85 })
+  mats.push(glassMat)
+
+  const windGeo = new THREE.BoxGeometry(width * 0.68, height * 0.32, 0.05)
+  geos.push(windGeo)
+  const wind = new THREE.Mesh(windGeo, glassMat)
+  wind.rotation.x = -Math.PI * 0.22
+  wind.position.set(0, cabinBaseY + height * 0.2, depth * 0.29)
+  group.add(wind)
+
+  const rearWinGeo = new THREE.BoxGeometry(width * 0.65, height * 0.28, 0.05)
+  geos.push(rearWinGeo)
+  const rearWin = new THREE.Mesh(rearWinGeo, glassMat)
+  rearWin.rotation.x = Math.PI * 0.2
+  rearWin.position.set(0, cabinBaseY + height * 0.19, -depth * 0.21)
+  group.add(rearWin)
+
+  const sideWinGeo = new THREE.BoxGeometry(0.02, height * 0.24, depth * 0.44)
   geos.push(sideWinGeo)
-  for (const wx of [-width * 0.32, width * 0.32]) {
-    const win = new THREE.Mesh(sideWinGeo, winMat)
-    win.position.set(wx, height * 0.77, 0)
-    group.add(win)
+  for (const sx of [-width * 0.36, width * 0.36]) {
+    const sw = new THREE.Mesh(sideWinGeo, glassMat)
+    sw.position.set(sx, cabinBaseY + height * 0.2, depth * 0.04)
+    group.add(sw)
+  }
+
+  const bumperMat = new THREE.MeshLambertMaterial({ color: 0x1e1e1e })
+  mats.push(bumperMat)
+
+  const fBumperGeo = new THREE.BoxGeometry(width * 0.94, height * 0.1, 0.09)
+  geos.push(fBumperGeo)
+  const fBumper = new THREE.Mesh(fBumperGeo, bumperMat)
+  fBumper.position.set(0, wheelR + 0.05, depth * 0.5 + 0.045)
+  group.add(fBumper)
+
+  const grilleGeo = new THREE.BoxGeometry(width * 0.5, height * 0.18, 0.04)
+  const grilleMat = new THREE.MeshLambertMaterial({ color: 0x111111 })
+  geos.push(grilleGeo)
+  mats.push(grilleMat)
+  const grille = new THREE.Mesh(grilleGeo, grilleMat)
+  grille.position.set(0, wheelR + height * 0.22, depth * 0.5 + 0.02)
+  group.add(grille)
+
+  const rBumperGeo = new THREE.BoxGeometry(width * 0.94, height * 0.1, 0.09)
+  geos.push(rBumperGeo)
+  const rBumper = new THREE.Mesh(rBumperGeo, bumperMat)
+  rBumper.position.set(0, wheelR + 0.05, -depth * 0.5 - 0.045)
+  group.add(rBumper)
+
+  const hlMat = new THREE.MeshLambertMaterial({ color: 0xfff8e0, emissive: 0xffffff, emissiveIntensity: 0.95 })
+  mats.push(hlMat)
+  const hlGeo = new THREE.BoxGeometry(width * 0.28, height * 0.08, 0.03)
+  geos.push(hlGeo)
+  for (const hx of [-width * 0.3, width * 0.3]) {
+    const hl = new THREE.Mesh(hlGeo, hlMat)
+    hl.position.set(hx, wheelR + height * 0.32, depth * 0.5 + 0.015)
+    group.add(hl)
+  }
+
+  const tlMat = new THREE.MeshLambertMaterial({ color: 0xff1100, emissive: 0xff1100, emissiveIntensity: 0.9 })
+  mats.push(tlMat)
+  const tlGeo = new THREE.BoxGeometry(width * 0.28, height * 0.08, 0.03)
+  geos.push(tlGeo)
+  for (const tx of [-width * 0.3, width * 0.3]) {
+    const tl = new THREE.Mesh(tlGeo, tlMat)
+    tl.position.set(tx, wheelR + height * 0.32, -depth * 0.5 - 0.015)
+    group.add(tl)
   }
 
   const wheelMat = new THREE.MeshLambertMaterial({ color: 0x181818 })
   mats.push(wheelMat)
-  const wheelGeo = new THREE.CylinderGeometry(wheelR, wheelR, 0.12, 10)
+  const wheelGeo = new THREE.CylinderGeometry(wheelR, wheelR, width * 0.12, 10)
   geos.push(wheelGeo)
-  const wheelPos: Array<[number, number]> = [
-    [-width * 0.42, depth * 0.32],
-    [width * 0.42, depth * 0.32],
-    [-width * 0.42, -depth * 0.32],
-    [width * 0.42, -depth * 0.32],
+  const hubMat = new THREE.MeshLambertMaterial({ color: 0xc8c8c8 })
+  mats.push(hubMat)
+  const hubGeo = new THREE.CylinderGeometry(wheelR * 0.44, wheelR * 0.44, width * 0.025, 8)
+  geos.push(hubGeo)
+
+  const wheelPositions: Array<[number, number]> = [
+    [-width * 0.44, depth * 0.3],
+    [width * 0.44, depth * 0.3],
+    [-width * 0.44, -depth * 0.3],
+    [width * 0.44, -depth * 0.3],
   ]
-  for (const [wx, wz] of wheelPos) {
+  for (const [wx, wz] of wheelPositions) {
     const wheel = new THREE.Mesh(wheelGeo, wheelMat)
     wheel.rotation.z = Math.PI / 2
     wheel.position.set(wx, wheelR, wz)
     group.add(wheel)
+    const hub = new THREE.Mesh(hubGeo, hubMat)
+    hub.rotation.z = Math.PI / 2
+    const sign = wx < 0 ? -1 : 1
+    hub.position.set(wx + sign * (width * 0.06 + 0.01), wheelR, wz)
+    group.add(hub)
   }
 
-  const headlightMat = new THREE.MeshLambertMaterial({ color: 0xfff8e0, emissive: 0xffffff, emissiveIntensity: 0.8 })
-  mats.push(headlightMat)
-  const headlightGeo = new THREE.BoxGeometry(0.1, 0.06, 0.02)
-  geos.push(headlightGeo)
-  for (const hx of [-width * 0.3, width * 0.3]) {
-    const hl = new THREE.Mesh(headlightGeo, headlightMat)
-    hl.position.set(hx, height * 0.3, depth * 0.5 + 0.01)
-    group.add(hl)
+  const mirrorMat = new THREE.MeshLambertMaterial({ color: 0x111111 })
+  mats.push(mirrorMat)
+  const mirrorGeo = new THREE.BoxGeometry(0.12, 0.06, 0.09)
+  geos.push(mirrorGeo)
+  for (const mx of [-width * 0.5 - 0.06, width * 0.5 + 0.06]) {
+    const mirror = new THREE.Mesh(mirrorGeo, mirrorMat)
+    mirror.position.set(mx, cabinBaseY + height * 0.28, depth * 0.19)
+    group.add(mirror)
   }
 
-  const taillightMat = new THREE.MeshLambertMaterial({ color: 0xff2200, emissive: 0xff2200, emissiveIntensity: 0.7 })
-  mats.push(taillightMat)
-  const taillightGeo = new THREE.BoxGeometry(0.12, 0.06, 0.02)
-  geos.push(taillightGeo)
-  for (const hx of [-width * 0.3, width * 0.3]) {
-    const tl = new THREE.Mesh(taillightGeo, taillightMat)
-    tl.position.set(hx, height * 0.3, -depth * 0.5 - 0.01)
-    group.add(tl)
+  const lineGeo = new THREE.BoxGeometry(0.02, height * 0.04, depth * 0.86)
+  const lineMat = new THREE.MeshLambertMaterial({ color: bodyColor, emissive: bodyColor, emissiveIntensity: 0.5 })
+  geos.push(lineGeo)
+  mats.push(lineMat)
+  for (const lx of [-width * 0.5, width * 0.5]) {
+    const line = new THREE.Mesh(lineGeo, lineMat)
+    line.position.set(lx, wheelR + height * 0.34, 0)
+    group.add(line)
   }
 
   return group
@@ -875,7 +944,7 @@ function makeSushi(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.
   const s = COLLECTIBLE_WORLD_SIZE
 
   const riceGeo = new THREE.SphereGeometry(s * 0.3, 8, 6)
-  const riceMat = new THREE.MeshLambertMaterial({ color: 0xf5f0e8 })
+  const riceMat = new THREE.MeshLambertMaterial({ color: 0xf5f0e8, emissive: 0xf5f0e8, emissiveIntensity: 0.45 })
   geos.push(riceGeo)
   mats.push(riceMat)
   const rice = new THREE.Mesh(riceGeo, riceMat)
@@ -891,7 +960,7 @@ function makeSushi(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.
   group.add(nori)
 
   const salmonGeo = new THREE.BoxGeometry(s * 0.6, s * 0.15, s * 0.36)
-  const salmonMat = new THREE.MeshLambertMaterial({ color: 0xf08060 })
+  const salmonMat = new THREE.MeshLambertMaterial({ color: 0xf08060, emissive: 0xf08060, emissiveIntensity: 0.5 })
   geos.push(salmonGeo)
   mats.push(salmonMat)
   const salmon = new THREE.Mesh(salmonGeo, salmonMat)
@@ -906,13 +975,13 @@ function makeRamen(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.
   const s = COLLECTIBLE_WORLD_SIZE
 
   const bowlGeo = new THREE.CylinderGeometry(s * 0.48, s * 0.38, s * 0.38, 12)
-  const bowlMat = new THREE.MeshLambertMaterial({ color: 0x2e1010 })
+  const bowlMat = new THREE.MeshLambertMaterial({ color: 0x2e1010, emissive: 0x4a1a1a, emissiveIntensity: 0.3 })
   geos.push(bowlGeo)
   mats.push(bowlMat)
   const bowl = new THREE.Mesh(bowlGeo, bowlMat)
   group.add(bowl)
 
-  const noodleMat = new THREE.MeshLambertMaterial({ color: 0xf0e8c0 })
+  const noodleMat = new THREE.MeshLambertMaterial({ color: 0xf0e8c0, emissive: 0xf0e8c0, emissiveIntensity: 0.45 })
   mats.push(noodleMat)
   const noodleGeo = new THREE.CylinderGeometry(0.022, 0.022, s * 0.55, 5)
   geos.push(noodleGeo)
@@ -925,7 +994,7 @@ function makeRamen(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.
   }
 
   const toppingGeo = new THREE.CylinderGeometry(s * 0.08, s * 0.08, s * 0.1, 8)
-  const toppingMat = new THREE.MeshLambertMaterial({ color: 0xf0a8b8 })
+  const toppingMat = new THREE.MeshLambertMaterial({ color: 0xf0a8b8, emissive: 0xf0a8b8, emissiveIntensity: 0.48 })
   geos.push(toppingGeo)
   mats.push(toppingMat)
   const topping = new THREE.Mesh(toppingGeo, toppingMat)
@@ -947,7 +1016,7 @@ function makeMochi(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.
     [0xc4e8c4, 0, s * 0.12, -s * 0.12],
   ]
   for (const [color, px, py, pz] of mochiData) {
-    const mochiMat = new THREE.MeshLambertMaterial({ color })
+    const mochiMat = new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: 0.45 })
     mats.push(mochiMat)
     const m = new THREE.Mesh(mochiGeo, mochiMat)
     m.position.set(px, py, pz)
