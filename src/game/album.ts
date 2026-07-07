@@ -178,4 +178,47 @@ export const ALBUM_ENTRIES: AlbumEntry[] = [
     factKey: 'landmark.sensoji.fact',
     icon: '⛩️',
   },
+  // ── Egypt — Pyramídy ───────────────────────────────────────
+  {
+    id: 'datle-egypt',
+    category: 'food',
+    nameKey: 'food.datle.name',
+    factKey: 'album.datle-egypt.fact',
+    icon: '🌴',
+  },
+  {
+    id: 'pita',
+    category: 'food',
+    nameKey: 'food.pita.name',
+    factKey: 'album.pita.fact',
+    icon: '🫓',
+  },
+  {
+    id: 'falafel',
+    category: 'food',
+    nameKey: 'food.falafel.name',
+    factKey: 'album.falafel.fact',
+    icon: '🧆',
+  },
+  {
+    id: 'great-pyramid',
+    category: 'landmark',
+    nameKey: 'landmark.great-pyramid',
+    factKey: 'landmark.great-pyramid.fact',
+    icon: '🔺',
+  },
+  {
+    id: 'sphinx',
+    category: 'landmark',
+    nameKey: 'landmark.sphinx',
+    factKey: 'landmark.sphinx.fact',
+    icon: '🦁',
+  },
+  {
+    id: 'obelisk',
+    category: 'landmark',
+    nameKey: 'landmark.obelisk',
+    factKey: 'landmark.obelisk.fact',
+    icon: '🗿',
+  },
 ]

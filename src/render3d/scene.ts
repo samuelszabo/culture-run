@@ -21,6 +21,7 @@ import { buildChinaWallEnvironment } from './environments/china-wall'
 import { buildSlovakParadiseEnvironment, SlovakWaterHandle } from './environments/slovak-paradise'
 import { buildBurjKhalifaEnvironment } from './environments/burj-khalifa'
 import { buildTokyoNeonEnvironment } from './environments/tokyo-neon'
+import { buildEgyptPyramidsEnvironment } from './environments/egypt-pyramids'
 
 export interface Stage {
   scene: THREE.Scene
@@ -114,6 +115,23 @@ const ENV_CONFIGS: Record<string, EnvConfig> = {
     fogNear: 30,
     fogFar: 95,
     build: buildTokyoNeonEnvironment,
+  },
+  'egypt-pyramids': {
+    // Bright, hot desert noon: pale sandy-blue sky, strong warm sun, sand-tinted
+    // fill so the whole scene reads as sun-baked sandstone.
+    skyColor: 0xdcc79a,
+    ambientColor: 0xfff2d6,
+    ambientIntensity: 0.85,
+    sunColor: 0xfff1cf,
+    sunIntensity: 1.55,
+    sunPosition: [9, 14, 4],
+    hemiSky: 0xf3e6c4,
+    hemiGround: 0xc7a86a,
+    hemiIntensity: 0.6,
+    // Push fog out so distant pyramids and dunes stay visible in the heat haze.
+    fogNear: 55,
+    fogFar: 140,
+    build: buildEgyptPyramidsEnvironment,
   },
 }
 

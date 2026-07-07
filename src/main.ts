@@ -157,7 +157,9 @@ function devBoot(): void {
           ? 'burj-khalifa'
           : envShort === 'tokyo' || envShort === 'japan'
             ? 'tokyo-neon'
-            : null)
+            : envShort === 'egypt'
+              ? 'egypt-pyramids'
+              : null)
   const char = q.get('char')
   const d = q.get('d')
   const climb = q.has('climb')

@@ -84,6 +84,12 @@ export interface Player3D {
   // Ninja headband tails (animated)
   ninjaHeadbandTailL: THREE.Mesh | null
   ninjaHeadbandTailR: THREE.Mesh | null
+  // Scarab-pet companion (hovers beside the player)
+  scarabGroup: THREE.Group | null
+  scarabWingL: THREE.Mesh | null
+  scarabWingR: THREE.Mesh | null
+  // Pharaoh-collar cosmetic
+  pharaohCollarGroup: THREE.Group | null
   // Ground contact-shadow (cloud level only): a dark disc on the cloud surface
   // that stays put while the player jumps, so feet/landing spot stay readable.
   shadow: THREE.Mesh | null
@@ -669,6 +675,11 @@ function buildFalcon(): { petGroup: THREE.Group; wingL: THREE.Mesh; wingR: THREE
 const NINJA_DARK = 0x4b57a0
 const NINJA_RED = 0xe84a4a
 
+const PHARAOH_SKIN = 0xc98a4b
+const PHARAOH_GOLD = 0xe8c24a
+const PHARAOH_BLUE = 0x1b6fb3
+const PHARAOH_KILT = 0xf2ead3
+
 const NEKO_CREAM = 0xfff8f0
 const NEKO_COLLAR = 0xd23b3b
 const NEKO_BELL = 0xf2c14e
@@ -877,11 +888,75 @@ function buildKitsune(): { petGroup: THREE.Group; petLegs: THREE.Group[]; petTai
   return { petGroup, petLegs, petTailSegments }
 }
 
+// Scarab-pet companion — a small iridescent beetle that hovers beside the
+// player with softly flapping wing-cases.
+function buildScarab(): { petGroup: THREE.Group; wingL: THREE.Mesh; wingR: THREE.Mesh } {
+  const petGroup = new THREE.Group()
+  const s = H * 0.16
+
+  const bodyMesh = box(s * 1.1, s * 0.7, s * 1.5, 0x2f7d5b)
+  bodyMesh.position.y = 0
+  petGroup.add(bodyMesh)
+
+  const headMesh = box(s * 0.7, s * 0.5, s * 0.5, 0x1f5a40)
+  headMesh.position.set(0, s * 0.05, -s * 0.95)
+  petGroup.add(headMesh)
+
+  const wingGeoColor = 0x3fae7a
+  const wingL = box(s * 0.7, s * 0.1, s * 1.3, wingGeoColor)
+  wingL.geometry.translate(-s * 0.35, 0, 0)
+  wingL.position.set(0, s * 0.4, 0)
+  petGroup.add(wingL)
+  const wingR = box(s * 0.7, s * 0.1, s * 1.3, wingGeoColor)
+  wingR.geometry.translate(s * 0.35, 0, 0)
+  wingR.position.set(0, s * 0.4, 0)
+  petGroup.add(wingR)
+
+  const legMat = 0x143024
+  for (const sx of [-1, 1]) {
+    for (const lz of [-s * 0.4, 0, s * 0.4]) {
+      const leg = box(s * 0.5, s * 0.08, s * 0.08, legMat)
+      leg.geometry.translate(-sx * s * 0.25, 0, 0)
+      leg.position.set(sx * s * 0.55, -s * 0.3, lz)
+      petGroup.add(leg)
+    }
+  }
+
+  const sunGeo = box(s * 0.5, s * 0.5, s * 0.12, PHARAOH_GOLD)
+  sunGeo.position.set(0, s * 0.15, -s * 1.25)
+  petGroup.add(sunGeo)
+
+  return { petGroup, wingL, wingR }
+}
+
+// Pharaoh-collar cosmetic — a broad gold usekh collar with a blue trim that
+// sits on the chest of any character.
+function buildPharaohCollar(isQuad: boolean): THREE.Group {
+  const group = new THREE.Group()
+  if (isQuad) {
+    const collar = box(CAT_BODY_W * 1.2, CAT_BODY_H * 0.4, CAT_BODY_W * 0.4, PHARAOH_GOLD)
+    collar.position.set(0, CAT_BODY_Y + CAT_BODY_H * 0.1, CAT_HEAD_Z + CAT_HEAD_S * 0.4)
+    group.add(collar)
+    const trim = box(CAT_BODY_W * 1.0, CAT_BODY_H * 0.16, CAT_BODY_W * 0.44, PHARAOH_BLUE)
+    trim.position.set(0, CAT_BODY_Y - CAT_BODY_H * 0.05, CAT_HEAD_Z + CAT_HEAD_S * 0.4)
+    group.add(trim)
+    return group
+  }
+  const collar = box(BODY_W * 1.16, TORSO_H * 0.34, BODY_D * 1.16, PHARAOH_GOLD)
+  collar.position.set(0, TORSO_Y_TOP - TORSO_H * 0.12, 0)
+  group.add(collar)
+  const trim = box(BODY_W * 1.02, TORSO_H * 0.12, BODY_D * 1.2, PHARAOH_BLUE)
+  trim.position.set(0, TORSO_Y_TOP - TORSO_H * 0.26, 0)
+  group.add(trim)
+  return group
+}
+
 export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
   const isCat = state.character === 'cat'
   const isBear = state.character === 'bear'
   const isUnicorn = state.character === 'unicorn'
   const isNinja = state.character === 'ninja'
+  const isPharaoh = state.character === 'pharaoh'
   // Quadrupeds (cat + unicorn) share the 4-leg layout and animation hooks.
   const isQuad = isCat || isUnicorn
   const group = new THREE.Group()
@@ -889,7 +964,7 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
   group.add(body)
 
   // --- Head ---
-  const headColor = isCat ? CAT_ORANGE : isBear ? BEAR_BODY_COLOR : isUnicorn ? UNICORN_WHITE : isNinja ? NINJA_DARK : 0xf5c07a
+  const headColor = isCat ? CAT_ORANGE : isBear ? BEAR_BODY_COLOR : isUnicorn ? UNICORN_WHITE : isNinja ? NINJA_DARK : isPharaoh ? PHARAOH_SKIN : 0xf5c07a
   const headMesh = box(
     isQuad ? CAT_HEAD_S : BODY_W * 0.88,
     isQuad ? CAT_HEAD_S : HEAD_H,
@@ -972,6 +1047,55 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     body.add(scabbard)
   }
 
+  if (isPharaoh) {
+    const headW = BODY_W * 0.88
+    const faceZ = -(headW / 2 + BODY_D * 0.05)
+    const backZ = headW / 2 + BODY_D * 0.05
+
+    const crown = box(headW * 1.1, HEAD_H * 0.5, BODY_D * 0.88 * 1.12, PHARAOH_BLUE)
+    crown.position.set(0, HEAD_Y_CENTER + HEAD_H * 0.34, BODY_D * 0.05)
+    body.add(crown)
+
+    const backFlap = box(headW * 1.1, HEAD_H * 0.7, BODY_D * 0.2, PHARAOH_BLUE)
+    backFlap.position.set(0, HEAD_Y_CENTER + HEAD_H * 0.05, backZ)
+    body.add(backFlap)
+
+    const brow = box(headW * 1.12, HEAD_H * 0.16, BODY_D * 0.1, PHARAOH_GOLD)
+    brow.position.set(0, HEAD_Y_CENTER + HEAD_H * 0.28, faceZ)
+    body.add(brow)
+
+    for (const sx of [-1, 1]) {
+      const lappet = box(headW * 0.24, HEAD_H * 1.0, BODY_D * 0.24, PHARAOH_BLUE)
+      lappet.position.set(sx * (headW / 2 + headW * 0.06), HEAD_Y_CENTER - HEAD_H * 0.08, faceZ + BODY_D * 0.14)
+      body.add(lappet)
+      const stripe = box(headW * 0.24, HEAD_H * 1.0, BODY_D * 0.04, PHARAOH_GOLD)
+      stripe.position.set(sx * (headW / 2 + headW * 0.06), HEAD_Y_CENTER - HEAD_H * 0.08, faceZ + BODY_D * 0.02)
+      body.add(stripe)
+    }
+
+    const uraeus = box(HEAD_H * 0.12, HEAD_H * 0.16, BODY_D * 0.08, PHARAOH_GOLD)
+    uraeus.position.set(0, HEAD_Y_CENTER + HEAD_H * 0.24, faceZ - BODY_D * 0.02)
+    body.add(uraeus)
+    const uraeusHead = box(HEAD_H * 0.09, HEAD_H * 0.09, BODY_D * 0.06, NINJA_RED)
+    uraeusHead.position.set(0, HEAD_Y_CENTER + HEAD_H * 0.33, faceZ - BODY_D * 0.03)
+    body.add(uraeusHead)
+
+    const beard = box(HEAD_H * 0.16, HEAD_H * 0.5, HEAD_H * 0.14, PHARAOH_GOLD)
+    beard.position.set(0, HEAD_Y_BOTTOM - HEAD_H * 0.12, faceZ - BODY_D * 0.02)
+    body.add(beard)
+
+    const collar = box(BODY_W * 1.14, TORSO_H * 0.34, BODY_D * 1.14, PHARAOH_GOLD)
+    collar.position.set(0, TORSO_Y_TOP - TORSO_H * 0.12, 0)
+    body.add(collar)
+    const collarTrim = box(BODY_W * 1.0, TORSO_H * 0.12, BODY_D * 1.18, PHARAOH_BLUE)
+    collarTrim.position.set(0, TORSO_Y_TOP - TORSO_H * 0.26, 0)
+    body.add(collarTrim)
+
+    const belt = box(BODY_W * 1.04, TORSO_H * 0.16, BODY_D * 1.04, PHARAOH_GOLD)
+    belt.position.set(0, TORSO_Y_BOTTOM + TORSO_H * 0.08, 0)
+    body.add(belt)
+  }
+
   // --- Torso ---
   const torsoColor = isCat
     ? CAT_ORANGE
@@ -981,9 +1105,11 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
         ? UNICORN_WHITE
         : isNinja
           ? NINJA_DARK
-          : state.character === 'boy'
-            ? 0x3a7bd5
-            : 0xe87fac
+          : isPharaoh
+            ? PHARAOH_SKIN
+            : state.character === 'boy'
+              ? 0x3a7bd5
+              : 0xe87fac
   const torsoMesh = isQuad
     ? box(CAT_BODY_W, CAT_BODY_H, CAT_BODY_L, torsoColor)
     : box(BODY_W, TORSO_H, BODY_D, torsoColor)
@@ -1004,8 +1130,8 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
   }
 
   // --- Biped limbs (used for boy/girl/bear; created-but-unused for quadrupeds) ---
-  const limbSkinColor = isCat ? CAT_ORANGE : isBear ? BEAR_LIMB_COLOR : isUnicorn ? UNICORN_WHITE : isNinja ? NINJA_DARK : 0xf5c07a
-  const legColor = isCat ? CAT_ORANGE : isBear ? BEAR_LIMB_COLOR : isUnicorn ? UNICORN_WHITE : isNinja ? NINJA_DARK : 0x2c3e7a
+  const limbSkinColor = isCat ? CAT_ORANGE : isBear ? BEAR_LIMB_COLOR : isUnicorn ? UNICORN_WHITE : isNinja ? NINJA_DARK : isPharaoh ? PHARAOH_SKIN : 0xf5c07a
+  const legColor = isCat ? CAT_ORANGE : isBear ? BEAR_LIMB_COLOR : isUnicorn ? UNICORN_WHITE : isNinja ? NINJA_DARK : isPharaoh ? PHARAOH_KILT : 0x2c3e7a
 
   const armMesh = box(ARM_W, ARM_H, ARM_W, limbSkinColor)
   const armLGroup = makeLimbGroup(armMesh, ARM_H, TORSO_Y_TOP - ARM_H * 0.1)
@@ -1427,6 +1553,28 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     group.add(kitsuneGroup)
   }
 
+  // --- Scarab-pet companion ---
+  let scarabGroup: THREE.Group | null = null
+  let scarabWingL: THREE.Mesh | null = null
+  let scarabWingR: THREE.Mesh | null = null
+
+  if (state.equipped.includes('scarab-pet')) {
+    const built = buildScarab()
+    scarabGroup = built.petGroup
+    scarabWingL = built.wingL
+    scarabWingR = built.wingR
+    scarabGroup.position.set(0.6, 1.2, 1.1)
+    group.add(scarabGroup)
+  }
+
+  // --- Pharaoh-collar cosmetic ---
+  let pharaohCollarGroup: THREE.Group | null = null
+
+  if (state.equipped.includes('pharaoh-collar')) {
+    pharaohCollarGroup = buildPharaohCollar(isQuad)
+    body.add(pharaohCollarGroup)
+  }
+
   // --- Bear chaser ---
   let chaserGroup: THREE.Group | null = null
   let chaserLegs: THREE.Group[] = []
@@ -1524,6 +1672,10 @@ export function createPlayer3D(scene: THREE.Scene, state: GameState): Player3D {
     kitsuneTailSegments,
     ninjaHeadbandTailL,
     ninjaHeadbandTailR,
+    scarabGroup,
+    scarabWingL,
+    scarabWingR,
+    pharaohCollarGroup,
     shadow,
     scene,
   }
@@ -1838,6 +1990,21 @@ export function updatePlayer3D(p: Player3D, state: GameState): void {
     const flap = Math.sin(elapsed * 12) * 0.6
     if (p.falconWingL) p.falconWingL.rotation.z = flap
     if (p.falconWingR) p.falconWingR.rotation.z = -flap
+  }
+
+  // Scarab-pet companion: hovers beside the player with softly flapping wings.
+  if (p.scarabGroup) {
+    const sg = p.scarabGroup
+    sg.position.x = 0.6 + Math.sin(elapsed * 2.0) * 0.1
+    sg.position.z = 1.1
+    const bobBase = 1.2
+    sg.position.y = phase === 'finished'
+      ? bobBase + Math.abs(Math.sin(elapsed * 5)) * 0.2
+      : bobBase + Math.sin(elapsed * 3.2) * 0.1
+    sg.rotation.y = Math.sin(elapsed * 1.5) * 0.3
+    const wingFlap = 0.4 + Math.sin(elapsed * 14) * 0.5
+    if (p.scarabWingL) p.scarabWingL.rotation.z = wingFlap
+    if (p.scarabWingR) p.scarabWingR.rotation.z = -wingFlap
   }
 
   // Neko-pet cosmetic animation

@@ -265,6 +265,45 @@
   transform-origin: bottom center;
 }
 
+.character-figure--pharaoh .char-body {
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 32px;
+  background: #d4af37;
+  border-radius: 4px;
+}
+
+.character-figure--pharaoh .char-legs {
+  background: #f2ead3;
+}
+
+.pharaoh-nemes {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 26px;
+  background: repeating-linear-gradient(90deg, #1b6fb3 0 5px, #e8c24a 5px 10px);
+  border-radius: 10px 10px 4px 4px;
+  z-index: 2;
+}
+
+.pharaoh-beard {
+  position: absolute;
+  top: 38px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 14px;
+  background: #c8a13a;
+  border-radius: 0 0 4px 4px;
+  z-index: 2;
+}
+
 .character-card--locked {
   opacity: 0.55;
   cursor: default;

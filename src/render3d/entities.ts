@@ -637,6 +637,93 @@ function makeCar(width: number, geos: THREE.BufferGeometry[], mats: THREE.Materi
   return group
 }
 
+const CAMEL_BODY = 0xc79a5b
+const CAMEL_LEG = 0xb98a4c
+
+function makeCamel(width: number, geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const height = OBSTACLE_WORLD_HEIGHTS.camel
+  const depth = toWorldSize(60)
+  const bodyW = Math.min(width, toWorldSize(90))
+
+  const bodyMat = new THREE.MeshLambertMaterial({ color: CAMEL_BODY })
+  mats.push(bodyMat)
+  const legMat = new THREE.MeshLambertMaterial({ color: CAMEL_LEG })
+  mats.push(legMat)
+
+  const bodyGeo = new THREE.BoxGeometry(bodyW, height * 0.3, depth * 0.7)
+  geos.push(bodyGeo)
+  const body = new THREE.Mesh(bodyGeo, bodyMat)
+  body.position.set(0, height * 0.55, 0)
+  group.add(body)
+
+  const humpGeo = new THREE.SphereGeometry(bodyW * 0.32, 8, 6)
+  geos.push(humpGeo)
+  for (const hz of [depth * 0.12, -depth * 0.12]) {
+    const hump = new THREE.Mesh(humpGeo, bodyMat)
+    hump.position.set(0, height * 0.72, hz)
+    hump.scale.set(1, 0.75, 0.9)
+    group.add(hump)
+  }
+
+  const neckGeo = new THREE.BoxGeometry(bodyW * 0.24, height * 0.42, depth * 0.2)
+  geos.push(neckGeo)
+  const neck = new THREE.Mesh(neckGeo, bodyMat)
+  neck.position.set(0, height * 0.7, depth * 0.34)
+  neck.rotation.x = -0.5
+  group.add(neck)
+
+  const headGeo = new THREE.BoxGeometry(bodyW * 0.26, height * 0.16, depth * 0.32)
+  geos.push(headGeo)
+  const head = new THREE.Mesh(headGeo, bodyMat)
+  head.position.set(0, height * 0.92, depth * 0.5)
+  group.add(head)
+
+  const legGeo = new THREE.BoxGeometry(bodyW * 0.13, height * 0.42, bodyW * 0.13)
+  geos.push(legGeo)
+  const legX = bodyW * 0.32
+  const legZ = depth * 0.26
+  for (const [lx, lz] of [[-legX, legZ], [legX, legZ], [-legX, -legZ], [legX, -legZ]] as Array<[number, number]>) {
+    const leg = new THREE.Mesh(legGeo, legMat)
+    leg.position.set(lx, height * 0.21, lz)
+    group.add(leg)
+  }
+
+  const tailGeo = new THREE.BoxGeometry(bodyW * 0.05, height * 0.22, bodyW * 0.05)
+  geos.push(tailGeo)
+  const tail = new THREE.Mesh(tailGeo, legMat)
+  tail.position.set(0, height * 0.45, -depth * 0.38)
+  tail.rotation.x = 0.4
+  group.add(tail)
+
+  return group
+}
+
+function makeStoneBlock(width: number, geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const height = OBSTACLE_WORLD_HEIGHTS['stone-block']
+  const depth = toWorldSize(48)
+
+  const lightMat = new THREE.MeshLambertMaterial({ color: 0xcaa96a, flatShading: true })
+  mats.push(lightMat)
+  const darkMat = new THREE.MeshLambertMaterial({ color: 0xb2915a, flatShading: true })
+  mats.push(darkMat)
+
+  const lowGeo = new THREE.BoxGeometry(width, height * 0.55, depth)
+  geos.push(lowGeo)
+  const low = new THREE.Mesh(lowGeo, lightMat)
+  low.position.y = height * 0.275
+  group.add(low)
+
+  const topGeo = new THREE.BoxGeometry(width * 0.7, height * 0.45, depth * 0.8)
+  geos.push(topGeo)
+  const top = new THREE.Mesh(topGeo, darkMat)
+  top.position.set(width * 0.08, height * 0.55 + height * 0.225, 0)
+  group.add(top)
+
+  return group
+}
+
 function makeNoodles(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
   const group = new THREE.Group()
   const s = COLLECTIBLE_WORLD_SIZE
@@ -1027,6 +1114,79 @@ function makeMochi(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.
   return group
 }
 
+function makePita(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const s = COLLECTIBLE_WORLD_SIZE
+
+  const breadMat = new THREE.MeshLambertMaterial({ color: 0xe6c27a })
+  mats.push(breadMat)
+  const breadGeo = new THREE.CylinderGeometry(s * 0.5, s * 0.5, s * 0.3, 14, 1, false, 0, Math.PI)
+  geos.push(breadGeo)
+  const bread = new THREE.Mesh(breadGeo, breadMat)
+  bread.rotation.z = Math.PI / 2
+  bread.rotation.y = Math.PI / 2
+  bread.scale.set(1, 1, 0.7)
+  group.add(bread)
+
+  const fillMat = new THREE.MeshLambertMaterial({ color: 0x6f9a3f })
+  mats.push(fillMat)
+  const fillGeo = new THREE.SphereGeometry(s * 0.1, 6, 5)
+  geos.push(fillGeo)
+  for (let i = 0; i < 3; i++) {
+    const f = new THREE.Mesh(fillGeo, fillMat)
+    f.position.set((i - 1) * s * 0.18, s * 0.12, 0)
+    group.add(f)
+  }
+
+  const tomatoMat = new THREE.MeshLambertMaterial({ color: 0xd0432e })
+  mats.push(tomatoMat)
+  const tomatoGeo = new THREE.SphereGeometry(s * 0.07, 6, 5)
+  geos.push(tomatoGeo)
+  const tomato = new THREE.Mesh(tomatoGeo, tomatoMat)
+  tomato.position.set(s * 0.05, s * 0.16, 0)
+  group.add(tomato)
+
+  return group
+}
+
+function makeFalafel(geos: THREE.BufferGeometry[], mats: THREE.Material[]): THREE.Group {
+  const group = new THREE.Group()
+  const s = COLLECTIBLE_WORLD_SIZE
+
+  const plateGeo = new THREE.CylinderGeometry(s * 0.46, s * 0.4, s * 0.1, 14)
+  const plateMat = new THREE.MeshLambertMaterial({ color: 0xf0ece2 })
+  geos.push(plateGeo)
+  mats.push(plateMat)
+  const plate = new THREE.Mesh(plateGeo, plateMat)
+  plate.position.y = -s * 0.2
+  group.add(plate)
+
+  const ballMat = new THREE.MeshLambertMaterial({ color: 0x7a5a2a })
+  mats.push(ballMat)
+  const coreMat = new THREE.MeshLambertMaterial({ color: 0x6f8f3f })
+  mats.push(coreMat)
+  const ballGeo = new THREE.SphereGeometry(s * 0.16, 8, 6)
+  geos.push(ballGeo)
+  const ballPts: Array<[number, number, number]> = [
+    [-s * 0.16, 0, -s * 0.1],
+    [s * 0.16, 0, -s * 0.08],
+    [0, 0, s * 0.16],
+    [0, s * 0.16, 0],
+  ]
+  for (const [px, py, pz] of ballPts) {
+    const b = new THREE.Mesh(ballGeo, ballMat)
+    b.position.set(px, -s * 0.05 + py, pz)
+    b.scale.y = 0.82
+    group.add(b)
+  }
+  const core = new THREE.Mesh(ballGeo, coreMat)
+  core.position.set(0, s * 0.11, 0)
+  core.scale.setScalar(0.5)
+  group.add(core)
+
+  return group
+}
+
 function buildObstacleEntry(
   obstacle: Obstacle,
   scene: THREE.Scene,
@@ -1063,6 +1223,10 @@ function buildObstacleEntry(
     group = makeTowerTop(width, geos, mats)
   } else if (kind === 'car') {
     group = makeCar(width, geos, mats)
+  } else if (kind === 'camel') {
+    group = makeCamel(width, geos, mats)
+  } else if (kind === 'stone-block') {
+    group = makeStoneBlock(width, geos, mats)
   } else {
     group = makeCarrier(geos, mats)
   }
@@ -1188,6 +1352,10 @@ function buildCollectibleEntry(
     group = makeRamen(geos, mats)
   } else if (collectible.kind === 'mochi') {
     group = makeMochi(geos, mats)
+  } else if (collectible.kind === 'pita') {
+    group = makePita(geos, mats)
+  } else if (collectible.kind === 'falafel') {
+    group = makeFalafel(geos, mats)
   } else {
     group = makeTea(geos, mats)
   }

@@ -46,6 +46,10 @@ export const OBSTACLE_WORLD_HEIGHTS: Record<ObstacleKind, number> = {
   // Tokyo: a parked car blocking a lane — low enough to read as a vehicle, tall
   // enough to force a lateral dodge (not jumpable).
   car: 1.0,
+  // Egypt: a standing camel — tall lateral dodge.
+  camel: 1.8,
+  // Egypt: a stacked sandstone block — chest-high lateral dodge.
+  'stone-block': 1.1,
 }
 
 export const CAMERA_HEIGHT = 3.4

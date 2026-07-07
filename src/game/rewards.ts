@@ -118,4 +118,27 @@ export const REWARDS: Reward[] = [
     scoreThreshold: 1050,
     equippable: false,
   },
+  // ── Egypt — Pyramídy ───────────────────────────────────────
+  {
+    id: 'pharaoh-collar',
+    nameKey: 'reward.pharaoh-collar',
+    hintKey: 'reward.pharaoh-collar.hint',
+    country: 'egypt',
+    levelId: 'egypt-pyramids',
+  },
+  {
+    id: 'scarab-pet',
+    nameKey: 'reward.scarab-pet',
+    hintKey: 'reward.scarab-pet.hint',
+    country: 'egypt',
+    scoreThreshold: 810,
+  },
+  {
+    id: 'playable-pharaoh',
+    nameKey: 'reward.playable-pharaoh',
+    hintKey: 'reward.playable-pharaoh.hint',
+    country: 'egypt',
+    scoreThreshold: 1050,
+    equippable: false,
+  },
 ]

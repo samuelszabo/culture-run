@@ -4,6 +4,7 @@ import { Landmark } from './landmark'
 import { SLOVAK_PARADISE_LANDMARKS, createSlovakParadiseLevel } from './slovak-paradise'
 import { BURJ_KHALIFA_LANDMARKS, createBurjKhalifaLevel } from './burj-khalifa'
 import { TOKYO_NEON_LANDMARKS, createTokyoNeonLevel } from './tokyo-neon'
+import { EGYPT_PYRAMIDS_LANDMARKS, createEgyptPyramidsLevel } from './egypt-pyramids'
 
 // China landmarks live here (registry) rather than in the render layer so the
 // game loop can trigger captions without importing render3d.
@@ -87,6 +88,20 @@ export const LEVELS: Record<string, LevelDef> = {
     cardFactKey: 'card.tokyo-neon.fact',
     resultsFactKey: 'results.fact.tokyo-neon',
   },
+  'egypt-pyramids': {
+    id: 'egypt-pyramids',
+    countryKey: 'egypt',
+    flag: '🇪🇬',
+    environmentId: 'egypt-pyramids',
+    chaser: false,
+    createLevel: createEgyptPyramidsLevel,
+    landmarks: EGYPT_PYRAMIDS_LANDMARKS,
+    areaNameKey: 'area.egypt-pyramids',
+    areaInfoKey: 'area.egypt-pyramids.info',
+    cardTitleKey: 'card.egypt-pyramids.title',
+    cardFactKey: 'card.egypt-pyramids.fact',
+    resultsFactKey: 'results.fact.egypt-pyramids',
+  },
 }
 
 export function getLevel(id: string): LevelDef {
@@ -99,6 +114,7 @@ export const COUNTRY_LEVEL: Record<string, string> = {
   slovakia: 'slovak-paradise',
   dubai: 'burj-khalifa',
   japan: 'tokyo-neon',
+  egypt: 'egypt-pyramids',
 }
 
 // Characters offered in each country's wardrobe. The bear is the Slovak-themed
@@ -109,4 +125,5 @@ export const COUNTRY_CHARACTERS: Record<string, Character[]> = {
   slovakia: ['boy', 'girl', 'cat', 'bear'],
   dubai: ['boy', 'girl', 'cat', 'unicorn'],
   japan: ['boy', 'girl', 'cat', 'ninja'],
+  egypt: ['boy', 'girl', 'cat', 'pharaoh'],
 }

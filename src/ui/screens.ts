@@ -33,6 +33,9 @@ const REWARD_ICONS: Record<RewardId, string> = {
   'neko-pet': '🐱',
   'kitsune-pet': '🦊',
   'playable-ninja': '🥷',
+  'pharaoh-collar': '📿',
+  'scarab-pet': '🪲',
+  'playable-pharaoh': '🧑‍🦱',
 }
 
 // Characters that always exist vs. those gated behind a reward unlock.
@@ -42,6 +45,7 @@ function isCharacterUnlocked(ch: Character): boolean {
   if (ch === 'bear') return save.unlockedRewards.includes('playable-bear')
   if (ch === 'unicorn') return save.unlockedRewards.includes('playable-unicorn')
   if (ch === 'ninja') return save.unlockedRewards.includes('playable-ninja')
+  if (ch === 'pharaoh') return save.unlockedRewards.includes('playable-pharaoh')
   return true
 }
 
@@ -130,6 +134,11 @@ function createCharacterFigure(character: Character): HTMLDivElement {
     figure.appendChild(div('unicorn-tail'))
   }
 
+  if (character === 'pharaoh') {
+    figure.appendChild(div('pharaoh-nemes'))
+    figure.appendChild(div('pharaoh-beard'))
+  }
+
   return figure
 }
 
@@ -183,8 +192,8 @@ function renderCountry(): void {
     { key: 'slovakia', flag: '🇸🇰', unlocked: true },
     { key: 'dubai', flag: '🇦🇪', unlocked: true },
     { key: 'japan', flag: '🇯🇵', unlocked: true },
+    { key: 'egypt', flag: '🇪🇬', unlocked: true },
     { key: 'italy', flag: '🇮🇹', unlocked: false },
-    { key: 'egypt', flag: '🇪🇬', unlocked: false },
     { key: 'france', flag: '🇫🇷', unlocked: false },
   ]
 
